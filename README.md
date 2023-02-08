@@ -36,4 +36,4 @@ Password
 4. A user can only update their own account information.
 
 - Get user information
-1. As a user, I want to get my account information. Response payload should return all fields for the user except for password.
+1. As a user, I want to get my account information. Response payload should return all fields for the user except for password...

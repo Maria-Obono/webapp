@@ -1,3 +1,4 @@
+
 const express = require("express");
 const {sequelize, User, Product} = require('./sequelize/models'); // import models
 const { genSaltSync, hashSync, compareSync} = require("bcrypt");

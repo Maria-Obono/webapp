@@ -1,0 +1,17 @@
+
+[Unit]
+Description=mysql App
+After=cloud-final.service
+
+[Service]
+WorkingDirectory=/home/ec2-user/Application
+ExecStart=/usr/bin/node /home/ec2-user/Application/server.js
+Restart=always
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=webapp-app
+User=ec2-user
+
+[Install]
+WantedBy=multi-user.target

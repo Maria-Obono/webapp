@@ -47,12 +47,12 @@ build {
   ]
 
   provisioner "file" {
-    source      = "./webapp"
+    source      = "../webapp"
     destination = "/home/ec2-user/webapp"
   }
 
   provisioner "file" {
-    source      = "/mysql.service"
+    source      = "./mysql.service"
     destination = "/tmp/mysql.service"
   }
 

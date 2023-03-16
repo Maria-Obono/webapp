@@ -1,4 +1,5 @@
 require("dotenv/config"); 
+
 module.exports = {
   HOST :process.env.HOST_DB,
   USER:process.env.USER_DB,

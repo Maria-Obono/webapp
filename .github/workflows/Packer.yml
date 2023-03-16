@@ -33,7 +33,7 @@ jobs:
       - name: Initialize Packer Template
         uses: hashicorp/packer-github-actions@master
         with:
-          command: init
+          command: packer init
           target: aws-packer.pkr.hcl
 
 

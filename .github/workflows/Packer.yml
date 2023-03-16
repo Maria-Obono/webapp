@@ -9,6 +9,9 @@ jobs:
     
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
+
+
+  
     name: packer
 
     steps:
@@ -23,10 +26,12 @@ jobs:
           aws-region: us-east-1
 
       # Initialize Packer templates
+
       - name: Initialize Packer Template
         uses: hashicorp/packer-github-actions@master
         with:
           command: init
+
 
       # # validate templates
       # - name: Validate Template
@@ -36,12 +41,18 @@ jobs:
       #     arguments: -syntax-only
       #     target: aws-linux.pkr.hcl
 
+
       # build artifact
       - name: Build Artifact
         uses: hashicorp/packer-github-actions@master
         with:
           command: build
           arguments: "-color=false -on-error=abort"
+
           target: aws-packer.pkr.hcl
         env:
           PACKER_LOG: 1
+
+
+
+

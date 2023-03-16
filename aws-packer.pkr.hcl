@@ -44,7 +44,7 @@ build {
   ]
 
   provisioner "file" {
-    source      = "/.Application"
+    source      = "./Application"
     destination = "/home/ec2-user/Application"
   }
 

@@ -3,7 +3,7 @@ name: Run packer
 on:
   push:
     branches:
-        - 'master'
+        - 'main'
 jobs:
   packer_build:
     runs-on: ubuntu-latest

@@ -1,5 +1,5 @@
 module.exports = (sequelize, Sequelize) => {
-const User = require("../models")
+const User = require(".")
     //class Product extends Model {
         /**
          * Helper method for defining associations.

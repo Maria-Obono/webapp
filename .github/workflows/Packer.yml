@@ -7,16 +7,45 @@ on:
 jobs:
   packer_build:
     runs-on: ubuntu-latest
+    name: packer
+
     steps:
-      - uses: actions/checkout@v1
-      - name: Packer build
-        uses: ExitoLab/packer_build_action_aws@v0.2.10
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
-          templateFile: 'aws-packer.pkr.hcl'
-          workingDir: 'Packer-ami'
-          varFile: 'variables.json'
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          # aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }} 
+          # if you have/need it
+          aws-region: us-east-1
+
+      # Initialize Packer templates
+      - name: Initialize Packer Template
+        uses: hashicorp/packer-github-actions@master
+        with:
+          command: init
+
+
+      # validate templates
+      - name: Validate Template
+        uses: hashicorp/packer-github-actions@master
+        with:
+          command: validate
+          arguments: -syntax-only
+          target: aws-packer.pkr.hcl
+
+
+      # build artifact
+      - name: Build Artifact
+        uses: hashicorp/packer-github-actions@master
+        with:
+          command: build
+          arguments: "-color=false -on-error=abort"
+          target: aws-packer.pkr.hcl
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: us-east-1
+          PACKER_LOG: 1
+
 

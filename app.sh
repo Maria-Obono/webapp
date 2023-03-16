@@ -24,10 +24,9 @@ curl -sL https://rpm.nodesource.com/setup_14.x | sudo -E bash -
 sudo yum install -y nodejs
 sudo npm install pm2 -g
 
-sudo yum install unzip -y
-cd ~/ && unzip mysql.zip
-cd ~/mysql && npm install
-sudo npm install pm2 -g
+#sudo yum install unzip -y
+#cd ~/ && unzip mysql.zip
+cd ~/Application && npm install
 npm i multer
 npm i aws-sdk
 npm i client-s3

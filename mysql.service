@@ -4,8 +4,8 @@ Description=mysql App
 After=cloud-final.service
 
 [Service]
-WorkingDirectory=/home/ec2-user/webapp
-ExecStart=/usr/bin/node /home/ec2-user/webapp/server.js
+WorkingDirectory=/home/ec2-user/Application
+ExecStart=/usr/bin/node /home/ec2-user/Application/server.js
 Restart=always
 RestartSec=10
 StandardOutput=syslog

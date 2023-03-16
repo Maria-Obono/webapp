@@ -6,7 +6,12 @@ on:
         - 'main'
 jobs:
   packer_build:
+
+    
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
+
+
 
     name: packer
 
@@ -19,8 +24,9 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          # aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }} 
-          # if you have/need it
+
+
+
           aws-region: us-east-1
 
       # Initialize Packer templates
@@ -30,13 +36,15 @@ jobs:
           command: init
 
 
-      # validate templates
-      - name: Validate Template
-        uses: hashicorp/packer-github-actions@master
-        with:
-          command: validate
-          arguments: -syntax-only
-          target: aws-packer.pkr.hcl
+      # # validate templates
+      # - name: Validate Template
+      #   uses: hashicorp/packer-github-actions@master
+      #   with:
+      #     command: validate
+      #     arguments: -syntax-only
+      #     target: aws-linux.pkr.hcl
+
+
 
 
       # build artifact
@@ -47,7 +55,7 @@ jobs:
           arguments: "-color=false -on-error=abort"
           target: aws-packer.pkr.hcl
         env:
-          PACKER_LOG: 1
 
+          PACKER_LOG: 1
 
 

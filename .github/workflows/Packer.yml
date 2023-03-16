@@ -1,34 +1,47 @@
-name: Packer AMI Builder
+name: Run packer
 
 on:
   push:
-    branches: [ main ]
-
-env:
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  AWS_REGION: us-east-1
-
+    branches:
+        - 'main'
 jobs:
-  build-ami:
+  packer_build:
+    
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    name: packer
 
     steps:
-      - name: Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
-         path: 'Packer-ami'
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
-      - name: Install Packer
-        run: |
-          wget https://releases.hashicorp.com/packer/1.7.4/packer_1.7.4_linux_amd64.zip
-          unzip packer_1.7.4_linux_amd64.zip
-          sudo mv packer /usr/local/bin/
+      # Initialize Packer templates
+      - name: Initialize Packer Template
+        uses: hashicorp/packer-github-actions@master
+        with:
+          command: init
 
-      - name: Build AMI with Packer
-        run: |
-          cd Packer-ami
-          packer validate aws-packer.pkr.hcl
-          packer build aws-packer.pkr.hcl
+      # # validate templates
+      # - name: Validate Template
+      #   uses: hashicorp/packer-github-actions@master
+      #   with:
+      #     command: validate
+      #     arguments: -syntax-only
+      #     target: aws-linux.pkr.hcl
 
-      
+      # build artifact
+      - name: Build Artifact
+        uses: hashicorp/packer-github-actions@master
+        with:
+          command: build
+          arguments: "-color=false -on-error=abort"
+          target: aws-packer.pkr.hcl
+        env:
+          PACKER_LOG: 1

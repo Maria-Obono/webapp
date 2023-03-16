@@ -3,18 +3,18 @@ name: Run packer
 on:
   push:
     branches:
-        - 'master'
+        - 'main'
 jobs:
   packer_build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
       - name: Packer build
-        uses: ExitoLab/packer_build_action_aws@v0.2.10
+        uses: hashicorp/packer_build_action_aws@v0.2.10
         with:
           templateFile: 'aws-packer.pkr.hcl'
           workingDir: 'Packer-ami'
-          varFile: 'variables.json'
+          
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

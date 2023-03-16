@@ -33,17 +33,16 @@ jobs:
       - name: Initialize Packer Template
         uses: hashicorp/packer-github-actions@master
         with:
-          command: packer init
-          target: aws-packer.pkr.hcl
+          command: init
 
 
-      # # validate templates
-      # - name: Validate Template
-      #   uses: hashicorp/packer-github-actions@master
-      #   with:
-      #     command: validate
-      #     arguments: -syntax-only
-      #     target: aws-linux.pkr.hcl
+      # validate templates
+      - name: Validate Template
+        uses: hashicorp/packer-github-actions@master
+        with:
+           command: validate
+           arguments: -syntax-only
+           target: aws-packer.pkr.hcl
 
 
 

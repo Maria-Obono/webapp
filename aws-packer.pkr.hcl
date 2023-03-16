@@ -18,9 +18,8 @@ variable "ami_users" {
 source "amazon-ebs" "Mysql" {
 
 
-
-  access_key =  "{{env `AWS_ACCESS_KEY_ID`}}"
-  secret_key = "{{env `AWS_SECRET_ACCESS_KEY`}}"
+  #access_key =  "{{env `AWS_ACCESS_KEY_ID`}}"
+  #secret_key = "{{env `AWS_SECRET_ACCESS_KEY`}}"
 
   region         = "us-east-1"
   ami_name = "mysql-app-${local.timestamp}"

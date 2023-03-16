@@ -1,16 +1,16 @@
 
 [Unit]
-Description=Cocktails App
+Description=mysql App
 After=cloud-final.service
 
 [Service]
-WorkingDirectory=/home/ec2-user/mysql
-ExecStart=/usr/bin/node /home/ec2-user/mysql/server.js
+WorkingDirectory=/home/ec2-user/webapp
+ExecStart=/usr/bin/node /home/ec2-user/webapp/server.js
 Restart=always
 RestartSec=10
 StandardOutput=syslog
 StandardError=syslog
-SyslogIdentifier=mysql-app
+SyslogIdentifier=webapp-app
 User=ec2-user
 
 [Install]

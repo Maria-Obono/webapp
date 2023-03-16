@@ -48,8 +48,8 @@ build {
   ]
 
   provisioner "file" {
-    source      = "../server.js"
-    destination = "/home/ec2-user/server.js"
+    source      = "../webapp"
+    destination = "/home/ec2-user/webapp"
   }
 
   provisioner "file" {

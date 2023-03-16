@@ -1,5 +1,9 @@
 #!/bin/bash
 
+export AWS_ACCESS_KEY_ID=AKIA2BZGFWDVEHXZ5BUA
+export AWS_SECRET_ACCESS_KEY=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
+
+
 sleep 30
 
 sudo yum update -y

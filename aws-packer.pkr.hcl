@@ -18,9 +18,6 @@ variable "ami_users" {
 source "amazon-ebs" "Mysql" {
 
 
-  #access_key =  "{{env `AWS_ACCESS_KEY_ID`}}"
-  #secret_key = "{{env `AWS_SECRET_ACCESS_KEY`}}"
-
   region         = "us-east-1"
   ami_name = "mysql-app-${local.timestamp}"
   ami_users = ["272647741966"]
@@ -47,7 +44,7 @@ build {
   ]
 
   provisioner "file" {
-    source      = "../webapp"
+    source      = ".webapp"
     destination = "/home/ec2-user/webapp"
   }
 

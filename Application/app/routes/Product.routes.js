@@ -7,11 +7,42 @@ module.exports = app => {
     const User= db.Users;
     const auth = require('basic-auth');
     const bcrypt = require('bcrypt'); 
+   
+    const winston = require('winston');
+    const winstonCloudWatch = require('winston-cloudwatch');
+
+    //////////////////////////////////////////////////////////////////////
+ const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.Console({
+      timestamp: true,
+      colorize: true
+    }),
+    new winston.transports.File({ filename: 'logs/sequelize.log' }),
+    new winstonCloudWatch({
+      logGroupName: 'csye6225-demo',
+      logStreamName: 'webapp',
+      createLogGroup: true,
+      createLogStream: true,
+      awsAccessKeyId: process.env.AWS_ACCESS_KEY,
+      awsSecretKey: process.env.AWS_SECRET_KEY,
+      awsRegion: 'us-east-1'
+    })
+  ]
+});
+///////////////////////////////////////////////////////////////////////
 
   //BASIC AUTHENTICATION FOR USERS
     const authenticate = async (req, res, next) => {
+      logger.info('Received authentication request');
       const credentials = auth(req);
       if (!credentials || !credentials.name || !credentials.pass) {
+        logger.warn('Unauthorized access attempt');
         res.status(401).json({ error: 'Unauthorized' });
         return;
       }
@@ -19,17 +50,18 @@ module.exports = app => {
       try {
         const user = await User.findOne({ where: { username: credentials.name } });
         if (!user || !bcrypt.compareSync(credentials.pass, user.password)) {
+          logger.warn('Invalid username or password');
           res.status(401).json({ error: 'Unauthorized' });
         } else {
+          logger.info('User successfully authenticated');
           req.user = user;
           next();
         }
       } catch (err) {
+        logger.error(`Error during authentication: ${err.message}`);
         res.status(500).json({ error: err.message });
       }
     };
-  
-
 
 //POST A PRODUCT
 router.post('/product', authenticate, async (req, res) => {
@@ -41,6 +73,7 @@ router.post('/product', authenticate, async (req, res) => {
       // Check if the user exists
       const user = await User.findOne({ where: { id: owner_user_id } });
       if (!user) {
+        logger.error(`User with id ${owner_user_id} not found`);
         return res.status(404).json({ error: 'User not found' });
       }
     // Create a new product with the input data
@@ -56,7 +89,8 @@ router.post('/product', authenticate, async (req, res) => {
 
       .then((product) => {
         // Return the product data as a JSON response
-        res.json({
+        logger.info(`New product with id ${product.id} has been created`);
+        res.status(201).json({
           id: product.id,
           name: product.name,
           description: product.description,
@@ -72,7 +106,19 @@ router.post('/product', authenticate, async (req, res) => {
     
     .catch((err) => {
         // Handle any errors that occur during product creation
+        if (err.name === 'SequelizeValidationError') {
+          logger.error(`Validation error: ${err.message}`);
+          res.status(400).json({ error: err.message });
+        } else if (err.name === 'UnauthorizedError') {
+          logger.error(`Unauthorized: ${err.message}`);
+          res.status(401).json({ error: 'Unauthorized' });
+        } else if (err.name === 'ForbiddenError') {
+          logger.error(`Forbidden: ${err.message}`);
+          res.status(403).json({ error: 'Forbidden' });
+        } else {
+          logger.error(`Internal Server Error: ${err.message}`);
         res.status(500).json({ error: err.message });
+        }
       });
     
   
@@ -92,6 +138,7 @@ router.post('/product', authenticate, async (req, res) => {
     })
       .then((product) => {
         if (!product) {
+          logger.error(`Product with id ${productId} not found`);
           res.status(404).json({ error: 'Product not found' });
         } else {
           product.name = name;
@@ -100,12 +147,14 @@ router.post('/product', authenticate, async (req, res) => {
           product.manufacturer = manufacturer;
           product.quantity = quantity;
           return product.save();
+          
         }
       })
       .then((product) => {
         if (!product) {
           res.status(204).send();
         } else {
+          logger.info(`Product with id ${productId} has been updated`);
           res.json({
             id: product.id,
             name: product.name,
@@ -121,12 +170,16 @@ router.post('/product', authenticate, async (req, res) => {
       })
       .catch((err) => {
         if (err.name === 'SequelizeValidationError') {
+          logger.error(`Validation error: ${err.message}`);
           res.status(400).json({ error: err.message });
         } else if (err.name === 'UnauthorizedError') {
+          logger.error(`Unauthorized: ${err.message}`);
           res.status(401).json({ error: 'Unauthorized' });
         } else if (err.name === 'ForbiddenError') {
+          logger.error(`Forbidden: ${err.message}`);
           res.status(403).json({ error: 'Forbidden' });
         } else {
+          logger.error(`Internal Server Error: ${err.message}`);
           res.status(500).json({ error: err.message });
         }
       });
@@ -138,6 +191,8 @@ router.post('/product', authenticate, async (req, res) => {
   router.patch('/product/:productId', authenticate,(req, res) => {
     const { productId } = req.params;
     const { name, description, sku, manufacturer, quantity } = req.body;
+
+    logger.info('PATCH request received to update product with ID ' + productId, { user_id: req.user.id });
   
     Product.findOne({
       where: {
@@ -147,6 +202,7 @@ router.post('/product', authenticate, async (req, res) => {
     })
       .then((product) => {
         if (!product) {
+          logger.warn('Product with ID ' + productId + ' not found', { user_id: req.user.id });
           res.status(404).json({ error: 'Product not found' });
         } else {
           if (name) product.name = name;
@@ -158,6 +214,7 @@ router.post('/product', authenticate, async (req, res) => {
         }
       })
       .then((product) => {
+        logger.info('Product with ID ' + productId + ' updated successfully', { user_id: req.user.id });
         res.json({
           id: product.id,
           name: product.name,
@@ -171,6 +228,7 @@ router.post('/product', authenticate, async (req, res) => {
         });
       })
       .catch((err) => {
+        logger.error('Error updating product with ID ' + productId, { user_id: req.user.id, error: err });
         if (err.name === 'SequelizeValidationError') {
           res.status(400).json({ error: err.message });
         } else if (err.name === 'UnauthorizedError') {
@@ -186,7 +244,7 @@ router.post('/product', authenticate, async (req, res) => {
 //DELETE PRODUCT BASED ON USER ID
   router.delete('/product/:productId', authenticate, (req, res) => {
     const { productId } = req.params;
-  
+    logger.info('DELETE request received to remove product with ID ' + productId, { user_id: req.user.id });
     Product.destroy({
       where: {
         id: productId,
@@ -195,12 +253,15 @@ router.post('/product', authenticate, async (req, res) => {
     })
       .then((numDeleted) => {
         if (numDeleted === 0) {
+          logger.warn('Product with ID ' + productId + ' not found', { user_id: req.user.id });
           res.status(404).json({ error: 'Product not found' });
         } else {
+          logger.info('Product with ID ' + productId + ' removed successfully', { user_id: req.user.id });
           res.sendStatus(204).json({message: 'product removed successfully'});
         }
       })
       .catch((err) => {
+        logger.error('Error removing product with ID ' + productId, { user_id: req.user.id, error: err });
         if (err.name === 'UnauthorizedError') {
           res.status(401).json({ error: 'Unauthorized' });
         } else if (err.name === 'ForbiddenError') {
@@ -220,8 +281,10 @@ router.post('/product', authenticate, async (req, res) => {
     })
       .then((product) => {
         if (!product) {
+          logger.error('Product not found', { productId });
           res.status(404).json({ error: 'Product not found' });
         } else {
+          logger.info('Product found', { productId });
           res.json({
             id: product.id,
             name: product.name,
@@ -235,7 +298,8 @@ router.post('/product', authenticate, async (req, res) => {
           });
         }
       })
-      .catch((err) => {
+    .catch((err) => {
+      logger.error('error getting product', { productId, error: err });
         res.status(500).json({ error: err.message });
       });
   });

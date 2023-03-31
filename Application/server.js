@@ -9,8 +9,6 @@ const AWS = require('aws-sdk');
 
 const winstonCloudWatch = require('winston-cloudwatch');
 
-
-
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.combine(

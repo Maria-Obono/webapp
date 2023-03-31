@@ -1,9 +1,5 @@
 #!/bin/bash
 
-export AWS_ACCESS_KEY_ID=AKIA2BZGFWDVEHXZ5BUA
-export AWS_SECRET_ACCESS_KEY=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
-
-
 sleep 30
 
 sudo yum update -y
@@ -23,8 +19,7 @@ curl -sL https://rpm.nodesource.com/setup_14.x | sudo -E bash -
 sudo yum install -y nodejs
 sudo npm install pm2 -g
 
-#sudo yum install unzip -y
-#cd ~/ && unzip mysql.zip
+
 cd ~/Application && npm install
 npm i multer
 npm i aws-sdk

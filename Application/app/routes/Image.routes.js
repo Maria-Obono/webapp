@@ -13,7 +13,7 @@ module.exports = app => {
   const winstonCloudWatch = require('winston-cloudwatch');   
   
 
-   //////////////////////////////////////////////////////////////////////
+   // Create loggers
    const logger = winston.createLogger({
     level: 'info',
     format: winston.format.combine(
@@ -37,7 +37,7 @@ module.exports = app => {
       })
     ]
   });
-  ///////////////////////////////////////////////////////////////////////
+  
 
  //BASIC AUTHENTICATION FOR USERS
  const authenticate = async (req, res, next) => {

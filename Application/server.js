@@ -6,13 +6,8 @@ const morgan = require('morgan');
 const winston = require('winston');
 const AWS = require('aws-sdk');
 
-//const { CloudWatchLogsTransport } = require('winston-aws-cloudwatch');
 const winstonCloudWatch = require('winston-cloudwatch');
 
-// Set up logging using morgan and winston
-//app.use(morgan('combined', {
-  //stream: winston.stream.write
-//}));
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.combine(

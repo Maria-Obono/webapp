@@ -116,7 +116,7 @@ module.exports = app => {
         logger.info('Image uploaded to S3 successfully');
         const image = await Image.create({
           
-          //product_id: req.body.product_id,
+          product_id: req.body.product_id,
           file_name: req.body.file_name,
           date_created: new Date(),
           s3_bucket_path: data.Location,

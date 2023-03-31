@@ -6,7 +6,12 @@ const morgan = require('morgan');
 const winston = require('winston');
 const AWS = require('aws-sdk');
 
+
 const winstonCloudWatch = require('winston-cloudwatch');
+
+
+const winstonCloudWatch = require('winston-cloudwatch');
+
 
 const logger = winston.createLogger({
   level: 'info',

@@ -11,7 +11,9 @@ module.exports = app => {
     const winston = require('winston');
     const winstonCloudWatch = require('winston-cloudwatch');
 
+
   //Create logger
+
  const logger = winston.createLogger({
   level: 'info',
   format: winston.format.combine(

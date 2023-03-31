@@ -1,6 +1,6 @@
 
 [Unit]
-Description=mysql App
+Description=webapp
 After=cloud-final.service
 
 [Service]

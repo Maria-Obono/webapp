@@ -28,3 +28,4 @@ Product SKU should be unique. Updating the product's SKU should return an error 
 Delete Product
 Authorization check - The product can only be deleted by the user that created it.
 Try deleting a product that has already been deleted.....
+

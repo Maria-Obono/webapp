@@ -69,13 +69,11 @@ module.exports = app => {
 router.post('/product', authenticate, async (req, res) => {
   
     const { name, description, sku, manufacturer, quantity} = req.body;
-    const owner_user_id = req.user.id; // Get the user id from the authenticated user
-
     
       // Check if the user exists
-      const user = await User.findOne({ where: { id: owner_user_id } });
+      const user = await User.findOne({ where: { id: req.user.id } });
       if (!user) {
-        logger.error(`User with id ${owner_user_id} not found`);
+        logger.error(`User with id ${req.user.id} not found`);
         return res.status(404).json({ error: 'User not found' });
       }
     // Create a new product with the input data
@@ -85,7 +83,7 @@ router.post('/product', authenticate, async (req, res) => {
       sku,
       manufacturer,
       quantity,
-      owner_user_id
+      owner_user_id: req.user.id
      
     })
 

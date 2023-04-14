@@ -12,8 +12,21 @@ module.exports = app => {
     const winston = require('winston');
     const winstonCloudWatch = require('winston-cloudwatch');
     const StatsD = require('hot-shots');
-    const statsdClient = new StatsD({host: 'localhost', port: 8125, prefix: 'webapp-maria'});
-
+    //const statsdClient = new StatsD({host: 'localhost', port: 8125, prefix: 'webapp-maria'});
+    const statsdClient = new StatsD({
+      host: 'localhost',
+      port: 8125,
+      prefix: 'my-app',
+      telegraf: true,
+      awsConfig: {
+        region: 'us-east-1',
+        credentials: {
+          accessKeyId: process.env.AWS_ACCESS_KEY,
+          secretAccessKey: process.env.AWS_SECRET_KEY,
+          
+        },
+      },
+    });
 
   //Create logger
 

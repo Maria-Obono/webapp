@@ -125,8 +125,8 @@ app.use(express.urlencoded({ extended: true }));
 
 
 // simple route
-app.get("/healthz", (req, res) => {
-  statsdClient.increment('GET api for healthz');
+app.get("/health", (req, res) => {
+  statsdClient.increment('GET api for health');
   return res.status(200).send({ message: "Welcome to my application." });
   
   

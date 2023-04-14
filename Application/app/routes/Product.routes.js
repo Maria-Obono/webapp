@@ -1,4 +1,5 @@
 module.exports = app => {
+  const dbConfig = require("../../db.config.js");
   const db = require("../models");
     var router = require("express").Router();
     //const User= require("../models")
@@ -10,6 +11,8 @@ module.exports = app => {
    
     const winston = require('winston');
     const winstonCloudWatch = require('winston-cloudwatch');
+    const StatsD = require('hot-shots');
+    const statsdClient = new StatsD({host: 'localhost', port: 8125, prefix: 'webapp-maria'});
 
 
   //Create logger
@@ -34,9 +37,30 @@ module.exports = app => {
       awsAccessKeyId: process.env.AWS_ACCESS_KEY,
       awsSecretKey: process.env.AWS_SECRET_KEY,
       awsRegion: 'us-east-1'
-    })
+    }),
+    //new winston.transports.StatsD({statsdClient: statsdClient}),
   ]
 });
+
+class StatsDTransport extends winston.Transport {
+  constructor(opts) {
+    super(opts);
+    this.client = statsdClient;
+  }
+
+  log(info, callback) {
+    setImmediate(() => {
+      this.emit('logged', info);
+    });
+
+    // Write the log message to StatsD
+    this.client.increment(info.message);
+    callback();
+  }
+}
+
+// Add the StatsD transport to the logger
+logger.add(new StatsDTransport());
 
 
   //BASIC AUTHENTICATION FOR USERS
@@ -72,6 +96,7 @@ router.post('/product', authenticate, async (req, res) => {
     
       // Check if the user exists
       const user = await User.findOne({ where: { id: req.user.id } });
+      statsdClient.increment('A Product has been POST');
       if (!user) {
         logger.error(`User with id ${req.user.id} not found`);
         return res.status(404).json({ error: 'User not found' });
@@ -155,6 +180,7 @@ router.post('/product', authenticate, async (req, res) => {
           res.status(204).send();
         } else {
           logger.info(`Product with id ${productId} has been updated`);
+          statsdClient.increment('A Product has been updated using PUT api request');
           res.json({
             id: product.id,
             name: product.name,
@@ -215,6 +241,7 @@ router.post('/product', authenticate, async (req, res) => {
       })
       .then((product) => {
         logger.info('Product with ID ' + productId + ' updated successfully', { user_id: req.user.id });
+        statsdClient.increment('Product with ID ' + productId + ' updated successfully using PATCH api', { user_id: req.user.id });
         res.json({
           id: product.id,
           name: product.name,
@@ -257,6 +284,7 @@ router.post('/product', authenticate, async (req, res) => {
           res.status(404).json({ error: 'Product not found' });
         } else {
           logger.info('Product with ID ' + productId + ' removed successfully', { user_id: req.user.id });
+          statsdClient.increment('DELETE api, Product with ID ' + productId + ' was removed successfully ');
           res.sendStatus(204).json({message: 'product removed successfully'});
         }
       })
@@ -279,12 +307,15 @@ router.post('/product', authenticate, async (req, res) => {
     Product.findOne({
       where: { id: productId },
     })
+
+    
       .then((product) => {
         if (!product) {
           logger.error('Product not found', { productId });
           res.status(404).json({ error: 'Product not found' });
         } else {
           logger.info('Product found', { productId });
+          statsdClient.increment('GET api to found product');
           res.json({
             id: product.id,
             name: product.name,

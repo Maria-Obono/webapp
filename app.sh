@@ -4,10 +4,10 @@ sleep 30
 
 sudo yum update -y
 
-sudo amazon-linux-extras install nginx1 -y;
-sudo mv /tmp/nginx.config /etc/systemd/system/nginx.config;
-sudo systemctl enable nginx
-sudo systemctl start nginx
+#sudo amazon-linux-extras install nginx1 -y;
+#sudo mv /tmp/nginx.config /etc/systemd/system/nginx.config;
+#sudo systemctl enable nginx
+#sudo systemctl start nginx
 
 sudo rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2022
 wget http://dev.mysql.com/get/mysql57-community-release-el7-8.noarch.rpm
@@ -31,5 +31,3 @@ npm i @aws-sdk/client-cloudwatch-logs
 sudo mv /tmp/webapp.service /etc/systemd/system/webapp.service
 sudo systemctl enable webapp.service
 sudo systemctl start webapp.service
-
- 

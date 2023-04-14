@@ -5,7 +5,8 @@ const app = express();
 const morgan = require('morgan');
 const winston = require('winston');
 const AWS = require('aws-sdk');
-
+const StatsD = require('hot-shots');
+const statsdClient = new StatsD({host: 'localhost', port: 8125, prefix: 'webapp-maria'});
 
 const winstonCloudWatch = require('winston-cloudwatch');
 
@@ -29,9 +30,33 @@ const logger = winston.createLogger({
       awsAccessKeyId: process.env.AWS_ACCESS_KEY,
       awsSecretKey: process.env.AWS_SECRET_KEY,
       awsRegion: 'us-east-1'
-    })
+    }),
+    //new winston.transports.StatsD({statsdClient: statsdClient}),
+    
   ]
 });
+
+class StatsDTransport extends winston.Transport {
+  constructor(opts) {
+    super(opts);
+    this.client = statsdClient;
+  }
+
+  log(info, callback) {
+    setImmediate(() => {
+      this.emit('logged', info);
+    });
+
+    // Write the log message to StatsD
+    this.client.increment(info.message);
+    callback();
+  }
+}
+
+// Add the StatsD transport to the logger
+logger.add(new StatsDTransport());
+
+
 
 // Configure Morgan logger
 const morganLogger = morgan('combined', {
@@ -49,38 +74,7 @@ AWS.config.update({
 
 const cloudwatch = new AWS.CloudWatch();
 
-function recordExecutionTime(req, res, next) {
-  const start = Date.now();
-  res.on('finish', () => {
-    const end = Date.now();
-    const executionTimeInMilliseconds = end - start;
-    const apiName = req.path;
-    const params = {
-      
-      MetricData: [
-        {
-          MetricName: 'csye6225_endpoint_homepage_http_get',
-          Value: executionTimeInMilliseconds,
-          Dimensions: [
-            {
-              Name: 'host, metric_type',
-              Value: apiName,
-            },
-          ],
-        },
-      ],
-      Namespace: 'CWAgent_API',
-    };
-    cloudwatch.putMetricData(params, (err, data) => {
-      if (err) {
-        logger.error('Failed to put metric data: ', err);
-      } else {
-        logger.info('Successfully put metric data: ', data);
-      }
-    });
-  });
-  next();
-}
+
 
 
 var corsOptions = {
@@ -91,6 +85,18 @@ app.use(cors(corsOptions));
 
 
 const db = require("./app/models");
+
+const dropTablesWithForeignKeys = async () => {
+  const tableNames = Object.keys(db.sequelize.models);
+
+  for (const tableName of tableNames) {
+    const table = db.sequelize.models[tableName];
+
+    // Drop the table itself
+    await table.drop();
+  }
+};
+
 db.sequelize.sync()
   .then(() => {
     console.log("Synced db.");
@@ -99,9 +105,17 @@ db.sequelize.sync()
     console.log("Failed to sync db: " + err.message);
   });
 
+  dropTablesWithForeignKeys().then(() => {
+    console.log("Dropped tables.");
+
   db.sequelize.sync({ force: true }).then(() => {
     console.log("Drop and re-sync db.");
+  }).catch((err) => {
+    console.log("Failed to drop and re-sync db: " + err.message);
   });
+}).catch((err) => {
+  console.log("Failed to drop tables: " + err.message);
+});
 
 // parse requests of content-type - application/json
 app.use(express.json());
@@ -111,9 +125,10 @@ app.use(express.urlencoded({ extended: true }));
 
 
 // simple route
-app.get("/healthz", recordExecutionTime, (req, res) => {
-  
+app.get("/healthz", (req, res) => {
+  statsdClient.increment('GET api for healthz');
   return res.status(200).send({ message: "Welcome to my application." });
+  
   
 });
 

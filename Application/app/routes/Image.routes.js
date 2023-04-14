@@ -1,5 +1,6 @@
 
 module.exports = app => {
+  const dbConfig = require("../../db.config.js");
   const db = require("../models");
   const router = require("express").Router();
   const multer = require('multer');
@@ -10,7 +11,9 @@ module.exports = app => {
   const User= db.Users;
   require("dotenv/config");
   const winston = require('winston');
-  const winstonCloudWatch = require('winston-cloudwatch');   
+  const winstonCloudWatch = require('winston-cloudwatch'); 
+  const StatsD = require('hot-shots');
+  const statsdClient = new StatsD({host: 'localhost', port: 8125, prefix: 'webapp-maria'}); 
 
 //Create logger
    const logger = winston.createLogger({
@@ -33,9 +36,30 @@ module.exports = app => {
         awsAccessKeyId: process.env.AWS_ACCESS_KEY,
         awsSecretKey: process.env.AWS_SECRET_KEY,
         awsRegion: 'us-east-1'
-      })
+      }),
+      //new winston.transports.StatsD({statsdClient: statsdClient}),
     ]
   });
+
+  class StatsDTransport extends winston.Transport {
+    constructor(opts) {
+      super(opts);
+      this.client = statsdClient;
+    }
+  
+    log(info, callback) {
+      setImmediate(() => {
+        this.emit('logged', info);
+      });
+  
+      // Write the log message to StatsD
+      this.client.increment(info.message);
+      callback();
+    }
+  }
+  
+  // Add the StatsD transport to the logger
+  logger.add(new StatsDTransport());
  
 
  //BASIC AUTHENTICATION FOR USERS
@@ -114,6 +138,7 @@ module.exports = app => {
         }
         
         logger.info('Image uploaded to S3 successfully');
+        statsdClient.increment('An image has been POST');
         const image = await Image.create({
           
           product_id: req.params.product_id,
@@ -141,6 +166,7 @@ module.exports = app => {
 
 router.get('/product/:product_id/image/:image_id', authenticate, async (req, res) => {
   logger.info('Received GET request to fetch image details');
+  statsdClient.increment('GET api for an image detail');
   const { product_id, image_id } = req.params;
 
   const image = await Image.findOne({
@@ -156,6 +182,7 @@ router.get('/product/:product_id/image/:image_id', authenticate, async (req, res
     res.status(404).json({ message: 'Image not found' });
   } else {
     logger.info('Returning image details:', image);
+    
     res.json({
       image_id: image.image_id,
       product_id: image.product_id,
@@ -181,6 +208,7 @@ router.get('/product/:product_id/image', authenticate, async (req, res) => {
       attributes: ['image_id', 'product_id', 'file_name', 'date_created', 's3_bucket_path']
     });
     logger.info(`Returning details for ${images.length} images`);
+    statsdClient.increment('GET api request for all images');
     res.json(images.map((res) => ({
       image_id: res.image_id,
       product_id: res.product_id,
@@ -213,6 +241,8 @@ router.delete('/product/:product_id/image/:image_id', authenticate, async (req, 
     }
     await image.destroy();
     logger.info('Image successfully deleted');
+    statsdClient.increment('DELETE api for image');
+    statsdClient.increment('DELETE api to delete image');
     res.status(200).send({message:"image successfully deleted"});
   } catch (error) {
     logger.error(`Error deleting image: ${error}`);

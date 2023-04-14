@@ -6,6 +6,7 @@ const morgan = require('morgan');
 const winston = require('winston');
 const AWS = require('aws-sdk');
 const StatsD = require('hot-shots');
+
 //const statsdClient = new StatsD({host: 'localhost', port: 8125, prefix: 'webapp-maria'});
 const statsdClient = new StatsD({
   host: 'localhost',
@@ -21,6 +22,7 @@ const statsdClient = new StatsD({
     },
   },
 });
+
 const winstonCloudWatch = require('winston-cloudwatch');
 
 const logger = winston.createLogger({

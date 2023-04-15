@@ -30,7 +30,6 @@ module.exports = app => {
     },
   });
 
-
 //Create logger
    const logger = winston.createLogger({
     level: 'info',

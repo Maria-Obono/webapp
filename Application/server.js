@@ -9,7 +9,6 @@ const StatsD = require('hot-shots');
 //const statsdClient = new StatsD({host: 'localhost', port: 8125, prefix: 'webapp-maria'});
 const statsdClient = new StatsD({
   host: dbConfig.HOST,
-
   port: 8125,
   prefix: 'my-app',
   telegraf: true,
@@ -22,7 +21,6 @@ const statsdClient = new StatsD({
     },
   },
 });
-
 
 const winstonCloudWatch = require('winston-cloudwatch');
 
@@ -88,9 +86,31 @@ AWS.config.update({
   region: 'us-east-1',
 });
 
-const cloudwatch = new AWS.CloudWatch();
+const cloudwatch = new AWS.CloudWatch({ region: 'us-east-1' });
 
-
+cloudwatch.putMetricData({
+  Namespace: 'Maria-App',
+  MetricData: [
+    {
+      MetricName: 'api_name.call_count',
+      Timestamp: new Date(),
+      Unit: 'Count',
+      Value: 1
+    },
+    {
+      MetricName: 'api_name.response_time',
+      Timestamp: new Date(),
+      Unit: 'Milliseconds',
+      Value: responseTime
+    }
+  ]
+}, function(err, data) {
+  if (err) {
+    console.log('Error sending metrics to CloudWatch:', err);
+  } else {
+    console.log('Metrics sent to CloudWatch:', data);
+  }
+});
 
 
 var corsOptions = {

@@ -86,7 +86,7 @@ AWS.config.update({
 });
 
 const cloudwatch = new AWS.CloudWatch({ region: 'us-east-1' });
-
+const responseTime = 100;
 cloudwatch.putMetricData({
   Namespace: 'Maria-App',
   MetricData: [

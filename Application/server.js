@@ -21,6 +21,7 @@ const statsdClient = new StatsD({
     },
   },
 });
+
 const winstonCloudWatch = require('winston-cloudwatch');
 
 const logger = winston.createLogger({
@@ -110,8 +111,6 @@ cloudwatch.putMetricData({
     console.log('Metrics sent to CloudWatch:', data);
   }
 });
-
-
 
 
 var corsOptions = {

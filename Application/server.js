@@ -1,14 +1,14 @@
 const express = require("express");
 const cors = require("cors");
 const app = express();
-
+const dbConfig = require("./db.config");
 const morgan = require('morgan');
 const winston = require('winston');
 const AWS = require('aws-sdk');
 const StatsD = require('hot-shots');
 //const statsdClient = new StatsD({host: 'localhost', port: 8125, prefix: 'webapp-maria'});
 const statsdClient = new StatsD({
-  host: 'localhost',
+  host: dbConfig.HOST,
   port: 8125,
   prefix: 'my-app',
   telegraf: true,

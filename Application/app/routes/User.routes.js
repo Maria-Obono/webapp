@@ -10,7 +10,7 @@ module.exports = app => {
   const StatsD = require('hot-shots');
   //const statsdClient = new StatsD({host: 'localhost', port: 8125, prefix: 'webapp-maria'});
   const statsdClient = new StatsD({
-    host: 'localhost',
+    host: dbConfig.HOST,
     port: 8125,
     prefix: 'my-app',
     telegraf: true,

@@ -50,6 +50,7 @@ module.exports = app => {
     //new winston.transports.StatsD({statsdClient: statsdClient}),
   ]
 });
+logger.info('API call made');
 
 class StatsDTransport extends winston.Transport {
   constructor(opts) {

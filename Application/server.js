@@ -22,6 +22,7 @@ const statsdClient = new StatsD({
   },
 });
 
+
 const winstonCloudWatch = require('winston-cloudwatch');
 
 const logger = winston.createLogger({
@@ -87,6 +88,7 @@ AWS.config.update({
 });
 
 const cloudwatch = new AWS.CloudWatch({ region: 'us-east-1' });
+const responseTime = 100;
 
 cloudwatch.putMetricData({
   Namespace: 'Maria-App',

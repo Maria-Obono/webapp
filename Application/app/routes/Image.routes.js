@@ -13,6 +13,7 @@ module.exports = app => {
   const winston = require('winston');
   const winstonCloudWatch = require('winston-cloudwatch'); 
   const StatsD = require('hot-shots');
+
   //const statsdClient = new StatsD({host: 'localhost', port: 8125, prefix: 'webapp-maria'}); 
   const statsdClient = new StatsD({
     host: dbConfig.HOST,
@@ -28,6 +29,8 @@ module.exports = app => {
       },
     },
   });
+
+
 //Create logger
    const logger = winston.createLogger({
     level: 'info',

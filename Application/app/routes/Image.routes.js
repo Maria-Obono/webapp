@@ -130,11 +130,7 @@ module.exports = app => {
   };
   
   const upload = multer({ storage: storage, fileFilter: filefilter }).single('productimage');
-  const s3 = new AWS.S3({
-    accessKeyId: process.env.AWS_ACCESS_KEY,
-    accessSecretId: process.env.AWS_SECRET_KEY,
-    region: 'us-east-1'
-});
+  const s3 = new AWS.S3({accessKeyId: process.env.AWS_ACCESS_KEY,region: 'us-east-1'});
 
 const cloudwatch = new AWS.CloudWatch({ region: 'us-east-1' });
   

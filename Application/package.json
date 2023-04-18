@@ -23,10 +23,16 @@
     "aws-cloudwatch-statsd-backend": "^1.2.0",
     "aws-s3": "^2.0.5",
     "aws-sdk": "^2.1359.0",
+
+    "aws-sdk-metrics": "^1.0.0",
+    "axios": "^1.3.5",
+
     "basic-auth": "^2.0.1",
     "bcrypt": "^5.0.0",
     "bcryptjs": "^2.4.3",
+    "cloudwatch-metrics": "^1.3.0",
     "cors": "^2.8.5",
+    "datadog-metrics": "^0.11.0",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "express-basic-auth": "^1.2.1",
@@ -36,9 +42,14 @@
     "multer": "^1.4.5-lts.1",
     "multer-s3": "^3.0.1",
     "mysql2": "^3.1.2",
+    "node-statsd": "^0.1.1",
     "nodemon": "^2.0.20",
     "sequelize": "^6.29.0",
+
+    "statsd": "^0.9.0",
     "statsd-client": "^0.4.7",
+    "statsd-cloudwatch-backend": "^0.2.4",
+
     "winston": "^3.8.2",
     "winston-aws-cloudwatch": "^3.0.0",
     "winston-cloudwatch": "^6.1.1",

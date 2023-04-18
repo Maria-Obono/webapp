@@ -14,20 +14,27 @@ module.exports = app => {
   const winstonCloudWatch = require('winston-cloudwatch'); 
   const StatsD = require('hot-shots');
 
-  //const statsdClient = new StatsD({host: 'localhost', port: 8125, prefix: 'webapp-maria'}); 
+  const { Transport } = require('winston');
+ 
+  //const {incrementApiMetric} = require('../../server.js')
+  
+
   const statsdClient = new StatsD({
-    host: dbConfig.HOST,
+    host: "localhost",
     port: 8125,
-    prefix: 'my-app',
-    telegraf: true,
-    awsConfig: {
+    prefix: 'api.',
+    cloudwatch: {
       region: 'us-east-1',
-      credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY,
         secretAccessKey: process.env.AWS_SECRET_KEY,
-        
-      },
-    },
+        namespace: 'Maria-App',
+        aws_iam_role: "EC2-CSYE6225",
+        globalDimensions: {
+        Environment: 'production',
+        Application: 'my-app'
+    }
+  },
+  backends: ['./backends/cloudwatch']   
   });
 
 
@@ -43,21 +50,20 @@ module.exports = app => {
         timestamp: true,
         colorize: true
       }),
-      new winston.transports.File({ filename: 'logs/sequelize.log' }),
+      //new winston.transports.File({ filename: 'logs/sequelize.log' }),
       new winstonCloudWatch({
-        logGroupName: 'csye6225-demo',
-        logStreamName: 'webapp',
-        createLogGroup: true,
-        createLogStream: true,
+        logGroupName: "csye6225-demo",
+        logStreamName: "webapp",
         awsAccessKeyId: process.env.AWS_ACCESS_KEY,
         awsSecretKey: process.env.AWS_SECRET_KEY,
         awsRegion: 'us-east-1'
-      }),
-      //new winston.transports.StatsD({statsdClient: statsdClient}),
+
+      }) 
     ]
   });
 
-  class StatsDTransport extends winston.Transport {
+  class StatsDTransport extends Transport {
+
     constructor(opts) {
       super(opts);
       this.client = statsdClient;
@@ -124,14 +130,18 @@ module.exports = app => {
   };
   
   const upload = multer({ storage: storage, fileFilter: filefilter }).single('productimage');
-  
   const s3 = new AWS.S3({
-    accessKeyId: process.env.AWS_ACCESS_KEY
+    accessKeyId: process.env.AWS_ACCESS_KEY,
+    accessSecretId: process.env.AWS_SECRET_KEY,
+    region: 'us-east-1'
 });
+
+const cloudwatch = new AWS.CloudWatch({ region: 'us-east-1' });
   
   //POST IMAGES
   router.post('/product/:product_id/image', authenticate, (req, res) => {
-   
+    const APIName = 'v1/product/:product_id/image';
+    
     logger.info('Received POST request to upload image');
     upload(req, res, function (err) {
       if (err) {
@@ -154,7 +164,27 @@ module.exports = app => {
         }
         
         logger.info('Image uploaded to S3 successfully');
-        statsdClient.increment('An image has been POST');
+
+        statsdClient.increment(`POST api.${APIName}.count.Image uploaded to S3 successfully`);
+        cloudwatch.putMetricData({
+          Namespace: 'Maria-App',
+          MetricData: [
+            {
+              MetricName: `api.${APIName}.count.user_already_exists`,
+              Timestamp: new Date(),
+              Unit: 'Count',
+              Value: 1
+            }
+          ]
+        }, function(err, data) {
+          if (err) {
+            console.log('Error sending metrics to CloudWatch:', err);
+          } else {
+            console.log('Metrics sent to CloudWatch:', data);
+          }
+        });
+        //incrementApiMetric(`POST api.${APIName}.count.Image uploaded to S3 successfully`);
+
         const image = await Image.create({
           
           product_id: req.params.product_id,
@@ -181,6 +211,8 @@ module.exports = app => {
 //GET IMAGE DETAILS  
 
 router.get('/product/:product_id/image/:image_id', authenticate, async (req, res) => {
+  const APIName = 'v1/product/:product_id/image/:image_id';
+    
   logger.info('Received GET request to fetch image details');
   statsdClient.increment('GET api for an image detail');
   const { product_id, image_id } = req.params;
@@ -198,7 +230,27 @@ router.get('/product/:product_id/image/:image_id', authenticate, async (req, res
     res.status(404).json({ message: 'Image not found' });
   } else {
     logger.info('Returning image details:', image);
-    
+
+    statsdClient.increment(`GET api.${APIName}.count.Returning image details`);
+    cloudwatch.putMetricData({
+      Namespace: 'Maria-App',
+      MetricData: [
+        {
+          MetricName: `api.${APIName}.count.user_already_exists`,
+          Timestamp: new Date(),
+          Unit: 'Count',
+          Value: 1
+        }
+      ]
+    }, function(err, data) {
+      if (err) {
+        console.log('Error sending metrics to CloudWatch:', err);
+      } else {
+        console.log('Metrics sent to CloudWatch:', data);
+      }
+    });
+    //incrementApiMetric(`GET api.${APIName}.count.Returning image details`);
+
     res.json({
       image_id: image.image_id,
       product_id: image.product_id,
@@ -214,6 +266,8 @@ router.get('/product/:product_id/image/:image_id', authenticate, async (req, res
 //GET ALL IMAGES CREATED DETAILS
 
 router.get('/product/:product_id/image', authenticate, async (req, res) => {
+  const APIName = 'v1/product/:product_id/image';
+    
   logger.info('Received GET request to fetch all images for a product');
   try {
     const { product_id } = req.params;
@@ -224,7 +278,27 @@ router.get('/product/:product_id/image', authenticate, async (req, res) => {
       attributes: ['image_id', 'product_id', 'file_name', 'date_created', 's3_bucket_path']
     });
     logger.info(`Returning details for ${images.length} images`);
-    statsdClient.increment('GET api request for all images');
+
+    statsdClient.increment(`GET api.${APIName}.count.returning details for all images`);
+    cloudwatch.putMetricData({
+      Namespace: 'Maria-App',
+      MetricData: [
+        {
+          MetricName: `api.${APIName}.count.user_already_exists`,
+          Timestamp: new Date(),
+          Unit: 'Count',
+          Value: 1
+        }
+      ]
+    }, function(err, data) {
+      if (err) {
+        console.log('Error sending metrics to CloudWatch:', err);
+      } else {
+        console.log('Metrics sent to CloudWatch:', data);
+      }
+    });
+    //incrementApiMetric(`GET api.${APIName}.count.returning details for all images`);
+
     res.json(images.map((res) => ({
       image_id: res.image_id,
       product_id: res.product_id,
@@ -242,6 +316,8 @@ router.get('/product/:product_id/image', authenticate, async (req, res) => {
 //DELETE IMAGES
 
 router.delete('/product/:product_id/image/:image_id', authenticate, async (req, res) => {
+  const APIName = 'v1/product/:product_id/image/:image_id';
+    
   logger.info('Received DELETE request to delete image');
   try {
     const { product_id, image_id } = req.params;
@@ -257,8 +333,27 @@ router.delete('/product/:product_id/image/:image_id', authenticate, async (req, 
     }
     await image.destroy();
     logger.info('Image successfully deleted');
-    statsdClient.increment('DELETE api for image');
-    statsdClient.increment('DELETE api to delete image');
+
+    statsdClient.increment(`DELETE api.${APIName}.count.image_deleted`);
+    cloudwatch.putMetricData({
+      Namespace: 'Maria-App',
+      MetricData: [
+        {
+          MetricName: `api.${APIName}.count.user_already_exists`,
+          Timestamp: new Date(),
+          Unit: 'Count',
+          Value: 1
+        }
+      ]
+    }, function(err, data) {
+      if (err) {
+        console.log('Error sending metrics to CloudWatch:', err);
+      } else {
+        console.log('Metrics sent to CloudWatch:', data);
+      }
+    });
+    //incrementApiMetric(`DELETE api.${APIName}.count.image_deleted`);
+
     res.status(200).send({message:"image successfully deleted"});
   } catch (error) {
     logger.error(`Error deleting image: ${error}`);

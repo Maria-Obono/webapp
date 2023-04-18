@@ -2,24 +2,33 @@ const express = require("express");
 const cors = require("cors");
 const app = express();
 const dbConfig = require("./db.config");
+
+require("dotenv/config"); 
+
 const morgan = require('morgan');
 const winston = require('winston');
 const AWS = require('aws-sdk');
 const StatsD = require('hot-shots');
-//const statsdClient = new StatsD({host: 'localhost', port: 8125, prefix: 'webapp-maria'});
+
+//const awsBackend = require("node-statsd");
+const { Transport } = require('winston');
+
 const statsdClient = new StatsD({
-  host: dbConfig.HOST,
+  host: "localhost",
   port: 8125,
-  prefix: 'my-app',
-  telegraf: true,
-  awsConfig: {
+  prefix: 'api.',
+  cloudwatch: {
     region: 'us-east-1',
-    credentials: {
       accessKeyId: process.env.AWS_ACCESS_KEY,
       secretAccessKey: process.env.AWS_SECRET_KEY,
-      
-    },
-  },
+      namespace: 'Maria-App',
+      aws_iam_role: "EC2-CSYE6225",
+      globalDimensions: {
+      Environment: 'production',
+      Application: 'my-app'
+  }
+},
+backends: ['./backends/cloudwatch']   
 });
 
 
@@ -36,22 +45,20 @@ const logger = winston.createLogger({
       timestamp: true,
       colorize: true
     }),
-    new winston.transports.File({ filename: 'logs/sequelize.log' }),
+    //new winston.transports.File({ filename: 'logs/sequelize.log' }),
     new winstonCloudWatch({
-      logGroupName: 'csye6225-demo',
-      logStreamName: 'webapp',
-      createLogGroup: true,
-      createLogStream: true,
+      logGroupName: "csye6225-demo",
+      logStreamName: "webapp",
       awsAccessKeyId: process.env.AWS_ACCESS_KEY,
       awsSecretKey: process.env.AWS_SECRET_KEY,
       awsRegion: 'us-east-1'
-    }),
-    //new winston.transports.StatsD({statsdClient: statsdClient}),
-    
+
+    }) 
   ]
 });
 
-class StatsDTransport extends winston.Transport {
+class StatsDTransport extends Transport {
+
   constructor(opts) {
     super(opts);
     this.client = statsdClient;
@@ -62,7 +69,9 @@ class StatsDTransport extends winston.Transport {
       this.emit('logged', info);
     });
 
-    // Write the log message to StatsD
+
+     //Write the log message to StatsD
+
     this.client.increment(info.message);
     callback();
   }
@@ -85,34 +94,14 @@ app.use(morganLogger);
 
 AWS.config.update({
   region: 'us-east-1',
+  accessKeyId: process.env.AWS_ACCESS_KEY,
+  secretAccessKey: process.env.AWS_SECRET_KEY,
 });
+
+
 
 const cloudwatch = new AWS.CloudWatch({ region: 'us-east-1' });
-const responseTime = 100;
 
-cloudwatch.putMetricData({
-  Namespace: 'Maria-App',
-  MetricData: [
-    {
-      MetricName: 'api_name.call_count',
-      Timestamp: new Date(),
-      Unit: 'Count',
-      Value: 1
-    },
-    {
-      MetricName: 'api_name.response_time',
-      Timestamp: new Date(),
-      Unit: 'Milliseconds',
-      Value: responseTime
-    }
-  ]
-}, function(err, data) {
-  if (err) {
-    console.log('Error sending metrics to CloudWatch:', err);
-  } else {
-    console.log('Metrics sent to CloudWatch:', data);
-  }
-});
 
 
 var corsOptions = {
@@ -164,7 +153,28 @@ app.use(express.urlencoded({ extended: true }));
 
 // simple route
 app.get("/health", (req, res) => {
-  statsdClient.increment('GET api for health');
+
+  const APIName= "/health"
+  statsdClient.increment(`GET api.${APIName}.count.for health`);
+  cloudwatch.putMetricData({
+    Namespace: 'Maria-App',
+    MetricData: [
+      {
+        MetricName: `api.${APIName}`,
+        Timestamp: new Date(),
+        Unit: 'Count',
+        Value: 1
+      }
+    ]
+  }, function(err, data) {
+    if (err) {
+      console.log('Error sending metrics to CloudWatch:', err);
+    } else {
+      console.log('Metrics sent to CloudWatch:', data);
+    }
+  });
+  
+
   return res.status(200).send({ message: "Welcome to my application." });
   
   
@@ -184,4 +194,4 @@ app.listen(PORT, () => {
   
 });
 
-module.exports = logger;
+

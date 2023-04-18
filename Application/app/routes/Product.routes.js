@@ -4,6 +4,7 @@ module.exports = app => {
     var router = require("express").Router();
     //const User= require("../models")
     //const Product= require("../models")
+    require("dotenv/config"); 
     const Product = db.Products;
     const User= db.Users;
     const auth = require('basic-auth');
@@ -13,24 +14,29 @@ module.exports = app => {
     const winstonCloudWatch = require('winston-cloudwatch');
     const StatsD = require('hot-shots');
 
+    const { Transport } = require('winston');
+    const AWS = require('aws-sdk');
+    //const {incrementApiMetric} = require('../../server.js')
 
-    //const statsdClient = new StatsD({host: 'localhost', port: 8125, prefix: 'webapp-maria'});
+
+ const cloudwatch = new AWS.CloudWatch({ region: 'us-east-1' });
     const statsdClient = new StatsD({
-      host: dbConfig.HOST,
+      host: "localhost",
       port: 8125,
-      prefix: 'my-app',
-      telegraf: true,
-      awsConfig: {
+      prefix: 'api.',
+      cloudwatch: {
         region: 'us-east-1',
-        credentials: {
           accessKeyId: process.env.AWS_ACCESS_KEY,
           secretAccessKey: process.env.AWS_SECRET_KEY,
-          
-        },
-      },
+          namespace: 'Maria-App',
+          aws_iam_role: "EC2-CSYE6225",
+          globalDimensions: {
+          Environment: 'production',
+          Application: 'my-app'
+      }
+    },
+    backends: ['./backends/cloudwatch']   
     });
-
-
 
   //Create logger
 
@@ -45,21 +51,20 @@ module.exports = app => {
       timestamp: true,
       colorize: true
     }),
-    new winston.transports.File({ filename: 'logs/sequelize.log' }),
-    new winstonCloudWatch({
-      logGroupName: 'csye6225-demo',
-      logStreamName: 'webapp',
-      createLogGroup: true,
-      createLogStream: true,
-      awsAccessKeyId: process.env.AWS_ACCESS_KEY,
-      awsSecretKey: process.env.AWS_SECRET_KEY,
-      awsRegion: 'us-east-1'
-    }),
-    //new winston.transports.StatsD({statsdClient: statsdClient}),
+
+   // new winston.transports.File({ filename: 'logs/sequelize.log' }),
+   new winstonCloudWatch({
+    logGroupName: "csye6225-demo",
+      logStreamName: "webapp",
+    awsAccessKeyId: process.env.AWS_ACCESS_KEY,
+    awsSecretKey: process.env.AWS_SECRET_KEY,
+    awsRegion: 'us-east-1'
+  }) 
   ]
 });
 
-class StatsDTransport extends winston.Transport {
+class StatsDTransport extends Transport {
+
   constructor(opts) {
     super(opts);
     this.client = statsdClient;
@@ -70,7 +75,9 @@ class StatsDTransport extends winston.Transport {
       this.emit('logged', info);
     });
 
-    // Write the log message to StatsD
+
+     //Write the log message to StatsD
+
     this.client.increment(info.message);
     callback();
   }
@@ -108,7 +115,8 @@ logger.add(new StatsDTransport());
 
 //POST A PRODUCT
 router.post('/product', authenticate, async (req, res) => {
-  
+  const APIName = 'v1/product';
+    
     const { name, description, sku, manufacturer, quantity} = req.body;
     
       // Check if the user exists
@@ -132,6 +140,25 @@ router.post('/product', authenticate, async (req, res) => {
       .then((product) => {
         // Return the product data as a JSON response
         logger.info(`New product with id ${product.id} has been created`);
+        statsdClient.increment(`POST api.${APIName}.count.product_create_successful`);
+        cloudwatch.putMetricData({
+          Namespace: 'Maria-App',
+          MetricData: [
+            {
+              MetricName: `api.${APIName}`,
+              Timestamp: new Date(),
+              Unit: 'Count',
+              Value: 1
+            }
+          ]
+        }, function(err, data) {
+          if (err) {
+            console.log('Error sending metrics to CloudWatch:', err);
+          } else {
+            console.log('Metrics sent to CloudWatch:', data);
+          }
+        });
+        //incrementApiMetric(`POST api.${APIName}.count.product_create_successful`);
         res.status(201).json({
           id: product.id,
           name: product.name,
@@ -169,6 +196,8 @@ router.post('/product', authenticate, async (req, res) => {
 
   //UPDATE A NEW PRODUCT
   router.put('/product/:id', authenticate, (req, res) => {
+    const APIName = 'v1/product/:id';
+   
     const { name, description, sku, manufacturer, quantity } = req.body;
     const { productId } = req.params;
   
@@ -197,7 +226,27 @@ router.post('/product', authenticate, async (req, res) => {
           res.status(204).send();
         } else {
           logger.info(`Product with id ${productId} has been updated`);
-          statsdClient.increment('A Product has been updated using PUT api request');
+
+          statsdClient.increment(`PUT api.${APIName}.count.product.update.successful`);
+          cloudwatch.putMetricData({
+            Namespace: 'Maria-App',
+            MetricData: [
+              {
+                MetricName: `api.${APIName}`,
+                Timestamp: new Date(),
+                Unit: 'Count',
+                Value: 1
+              }
+            ]
+          }, function(err, data) {
+            if (err) {
+              console.log('Error sending metrics to CloudWatch:', err);
+            } else {
+              console.log('Metrics sent to CloudWatch:', data);
+            }
+          });
+          //incrementApiMetric(`PUT api.${APIName}.count.product.update.successful`);
+
           res.json({
             id: product.id,
             name: product.name,
@@ -232,6 +281,8 @@ router.post('/product', authenticate, async (req, res) => {
   //PATCH REQUEST TO UPDATE THE PRODUCT
 
   router.patch('/product/:productId', authenticate,(req, res) => {
+    const APIName = 'v1/product/:productId';
+    
     const { productId } = req.params;
     const { name, description, sku, manufacturer, quantity } = req.body;
 
@@ -258,7 +309,27 @@ router.post('/product', authenticate, async (req, res) => {
       })
       .then((product) => {
         logger.info('Product with ID ' + productId + ' updated successfully', { user_id: req.user.id });
-        statsdClient.increment('Product with ID ' + productId + ' updated successfully using PATCH api', { user_id: req.user.id });
+
+        statsdClient.increment(`PATCH api.${APIName}.count.product.update.successful`, { user_id: req.user.id });
+        cloudwatch.putMetricData({
+          Namespace: 'Maria-App',
+          MetricData: [
+            {
+              MetricName: `api.${APIName}`,
+              Timestamp: new Date(),
+              Unit: 'Count',
+              Value: 1
+            }
+          ]
+        }, function(err, data) {
+          if (err) {
+            console.log('Error sending metrics to CloudWatch:', err);
+          } else {
+            console.log('Metrics sent to CloudWatch:', data);
+          }
+        });
+        //incrementApiMetric(`PATCH api.${APIName}.count.product.update.successful`, { user_id: req.user.id });
+
         res.json({
           id: product.id,
           name: product.name,
@@ -287,6 +358,8 @@ router.post('/product', authenticate, async (req, res) => {
   
 //DELETE PRODUCT BASED ON USER ID
   router.delete('/product/:productId', authenticate, (req, res) => {
+    const APIName = 'v1/product/:productId';
+   
     const { productId } = req.params;
     logger.info('DELETE request received to remove product with ID ' + productId, { user_id: req.user.id });
     Product.destroy({
@@ -301,7 +374,27 @@ router.post('/product', authenticate, async (req, res) => {
           res.status(404).json({ error: 'Product not found' });
         } else {
           logger.info('Product with ID ' + productId + ' removed successfully', { user_id: req.user.id });
-          statsdClient.increment('DELETE api, Product with ID ' + productId + ' was removed successfully ');
+
+          statsdClient.increment(`DELETE api.${APIName}.count.product_deleted`);
+          cloudwatch.putMetricData({
+            Namespace: 'Maria-App',
+            MetricData: [
+              {
+                MetricName: `api.${APIName}`,
+                Timestamp: new Date(),
+                Unit: 'Count',
+                Value: 1
+              }
+            ]
+          }, function(err, data) {
+            if (err) {
+              console.log('Error sending metrics to CloudWatch:', err);
+            } else {
+              console.log('Metrics sent to CloudWatch:', data);
+            }
+          });
+          //incrementApiMetric(`DELETE api.${APIName}.count.product_deleted`);
+
           res.sendStatus(204).json({message: 'product removed successfully'});
         }
       })
@@ -319,6 +412,8 @@ router.post('/product', authenticate, async (req, res) => {
   
   //GET REQUEST FOR ALL USERS TO GET THE PRODUCT DETAILS
   router.get('/product/:productId', (req, res) => {
+    const APIName = 'v1/product/:productId';
+   
     const { productId } = req.params;
   
     Product.findOne({
@@ -332,7 +427,27 @@ router.post('/product', authenticate, async (req, res) => {
           res.status(404).json({ error: 'Product not found' });
         } else {
           logger.info('Product found', { productId });
-          statsdClient.increment('GET api to found product');
+
+          statsdClient.increment(`GET api.${APIName}.count.Product_found`);
+          cloudwatch.putMetricData({
+            Namespace: 'Maria-App',
+            MetricData: [
+              {
+                MetricName: `api.${APIName}`,
+                Timestamp: new Date(),
+                Unit: 'Count',
+                Value: 1
+              }
+            ]
+          }, function(err, data) {
+            if (err) {
+              console.log('Error sending metrics to CloudWatch:', err);
+            } else {
+              console.log('Metrics sent to CloudWatch:', data);
+            }
+          });
+          //incrementApiMetric(`GET api.${APIName}.count.Product_found`);
+
           res.json({
             id: product.id,
             name: product.name,

@@ -7,26 +7,36 @@ module.exports = app => {
   const bcrypt = require('bcrypt'); 
   const winston = require('winston');
   const winstonCloudWatch = require('winston-cloudwatch');
-  const StatsD = require('hot-shots');
-  ///const statsdClient = new StatsD({host: 'localhost', port: 8125, prefix: 'webapp-maria'});
-  const statsdClient = new StatsD({
-    host: dbConfig.HOST,
 
+  require("dotenv/config"); 
+  const StatsD = require('hot-shots');
+  const AWS = require('aws-sdk');
+  //const awsBackend = require("node-statsd");
+  const { Transport } = require('winston');
+  //const {incrementApiMetric} = require('../../server.js')
+  
+const cloudwatch = new AWS.CloudWatch({ region: 'us-east-1' });
+
+   const statsdClient = new StatsD({
+    host: "localhost",
     port: 8125,
-    prefix: 'my-app',
-    telegraf: true,
-    awsConfig: {
+    prefix: 'api.',
+    cloudwatch: {
       region: 'us-east-1',
-      credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY,
         secretAccessKey: process.env.AWS_SECRET_KEY,
-        
-      },
-    },
+        namespace: 'Maria-App',
+        aws_iam_role: "EC2-CSYE6225",
+        globalDimensions: {
+        Environment: 'production',
+        Application: 'my-app'
+    }
+  },
+  backends: ['./backends/cloudwatch']   
+
   });
 
 // Create loggers
-
  const logger = winston.createLogger({
   level: 'info',
   format: winston.format.combine(
@@ -38,17 +48,16 @@ module.exports = app => {
       timestamp: true,
       colorize: true
     }),
-    new winston.transports.File({ filename: 'logs/sequelize.log' }),
+    //new winston.transports.File({ filename: 'logs/sequelize.log' }),
     new winstonCloudWatch({
-      logGroupName: 'csye6225-demo',
-      logStreamName: 'webapp',
-      createLogGroup: true,
-      createLogStream: true,
+      logGroupName: "csye6225-demo",
+      logStreamName: "webapp",
       awsAccessKeyId: process.env.AWS_ACCESS_KEY,
       awsSecretKey: process.env.AWS_SECRET_KEY,
       awsRegion: 'us-east-1'
-    }),
-    //new winston.transports.StatsD({statsdClient: statsdClient}),
+
+    }) 
+
   ]
 });
 logger.info('API call made');
@@ -63,6 +72,19 @@ class StatsDTransport extends winston.Transport {
     setImmediate(() => {
       this.emit('logged', info);
     });
+
+
+class StatsDTransport extends Transport {
+  constructor(opts) {
+    super(opts);
+    this.client = statsdClient;
+  }
+
+  log(info, callback) {
+    setImmediate(() => {
+      this.emit('logged', info);
+    });
+
 
     // Write the log message to StatsD
     this.client.increment(info.message);
@@ -105,11 +127,13 @@ logger.add(new StatsDTransport());
   //Create USER
   router.post('/user', async (req, res) => {
     const { first_name, last_name, password, username } = req.body;
-  
+    const APIName = 'v1/user';
+    
     // Check if user with email already exists
     const existingUser = await User.findOne({ where: { username } });
     if (existingUser) {
       logger.info('User already exists with that email address', {username});
+      
       return res.status(409).json({ message: 'User already exists with that email address' });
     }
   
@@ -125,10 +149,30 @@ logger.add(new StatsDTransport());
       
     });
     
-   
 
     logger.info('User created successfully', {userId: user.id});
-    statsdClient.increment('POST api: user.created');
+    statsdClient.increment(`POST api.${APIName}.count.created`);
+    cloudwatch.putMetricData({
+      Namespace: 'Maria-App',
+      MetricData: [
+        {
+          MetricName: `api.${APIName}`,
+          Timestamp: new Date(),
+          Unit: 'Count',
+          Value: 1
+        }
+      ]
+    }, function(err, data) {
+      if (err) {
+        console.log('Error sending metrics to CloudWatch:', err);
+      } else {
+        console.log('Metrics sent to CloudWatch:', data);
+      }
+    });
+    //incrementApiMetric(`POST api.${APIName}.user.created`);
+
+
+
     // Return the created user, excluding the password field
     return res.json({
       id: user.id,
@@ -140,6 +184,7 @@ logger.add(new StatsDTransport());
     });
   } catch (err )  {
     logger.error('Error creating user', {error: err});
+    
     res.status(500).send('Internal Server Error');
   }
   
@@ -149,14 +194,34 @@ logger.add(new StatsDTransport());
   //UPDATE USER INFORMATION
   
   router.put('/user/:id', authenticate, async (req, res) => {
+    const APIName = 'v1/user/:id';
     const { first_name, last_name, password, username } = req.body;
     const { id } = req.params;
-  
+    
   try{
     // Find the user by ID
     const user = await User.findByPk(id);
     if (!user) {
       logger.info('User not found', {userId: id});
+      statsdClient.increment(`PUT api.${APIName}.count.user_not_found`);
+      cloudwatch.putMetricData({
+        Namespace: 'Maria-App',
+        MetricData: [
+          {
+            MetricName: `api.${APIName}`,
+            Timestamp: new Date(),
+            Unit: 'Count',
+            Value: 1
+          }
+        ]
+      }, function(err, data) {
+        if (err) {
+          console.log('Error sending metrics to CloudWatch:', err);
+        } else {
+          console.log('Metrics sent to CloudWatch:', data);
+        }
+      });
+      //incrementApiMetric(`PUT api.${APIName}.count.user_not_found`);
       return res.status(400).json({ message: 'Bad Request' });
     }
   
@@ -177,13 +242,51 @@ logger.add(new StatsDTransport());
     // Save the updated user to the database
     await user.save();
     logger.info('User information updated successfully', {userId: id});
-    statsdClient.increment('UPDATE api: user.update.successful');
+
+    statsdClient.increment(`PUT api.${APIName}.count.user_updated`);
+    cloudwatch.putMetricData({
+      Namespace: 'Maria-App',
+      MetricData: [
+        {
+          MetricName: `api.${APIName}`,
+          Timestamp: new Date(),
+          Unit: 'Count',
+          Value: 1
+        }
+      ]
+    }, function(err, data) {
+      if (err) {
+        console.log('Error sending metrics to CloudWatch:', err);
+      } else {
+        console.log('Metrics sent to CloudWatch:', data);
+      }
+    });
+    //incrementApiMetric(`PUT api.${APIName}.count.user_updated`);
+
   
     // Return response
     return res.status(200).send({message: "user information updated successfully"});
 
   } catch (err )  {
     logger.error('Error updating user', {error: err});
+    cloudwatch.putMetricData({
+      Namespace: 'Maria-App',
+      MetricData: [
+        {
+          MetricName: `api.${APIName}.count.user_already_exists`,
+          Timestamp: new Date(),
+          Unit: 'Count',
+          Value: 1
+        }
+      ]
+    }, function(err, data) {
+      if (err) {
+        console.log('Error sending metrics to CloudWatch:', err);
+      } else {
+        console.log('Metrics sent to CloudWatch:', data);
+      }
+    });
+    //statsdClient.increment(`PUT api.${APIName}.count.update_error`);
     res.status(500).send('Internal Server Error');
   }
   });
@@ -194,8 +297,10 @@ logger.add(new StatsDTransport());
 //GET USER INFORMATION
   
 router.get('/user/:id', authenticate, async (req, res) => {
-  const { id } = req.params;
 
+  const APIName = 'v1/user/:id';
+  const { id } = req.params;
+ 
 try{
   // Find the user by ID
   const user = await User.findByPk(id, {
@@ -207,7 +312,27 @@ try{
   }
 
   logger.info('User information retrieved successfully', {userId: id});
-  statsdClient.increment('GET api: user.information retrieved.successful');
+
+  statsdClient.increment(`GET api.${APIName}.count.information_retrieved`);
+  cloudwatch.putMetricData({
+    Namespace: 'Maria-App',
+    MetricData: [
+      {
+        MetricName: `api.${APIName}`,
+        Timestamp: new Date(),
+        Unit: 'Count',
+        Value: 1
+      }
+    ]
+  }, function(err, data) {
+    if (err) {
+      console.log('Error sending metrics to CloudWatch:', err);
+    } else {
+      console.log('Metrics sent to CloudWatch:', data);
+    }
+  });
+  //incrementApiMetric(`GET api.${APIName}.count.information_retrieved`);
+
 
   // Return the user's information
   return res.json(user);
@@ -224,11 +349,32 @@ try{
 
 router.delete('/user/:id',authenticate, async (req, res) => {
   const id = req.params.id;
-
+  const APIName = 'v1/user/:id';
+  
   try{
   await User.destroy({where: {id: id}});
   logger.info('User deleted successfully', {userId: id});
-  statsdClient.increment('DELETE api: user.deleted.successful');
+
+  statsdClient.increment(`DELETE api.${APIName}.count.user_deleted_successful`);
+  cloudwatch.putMetricData({
+    Namespace: 'Maria-App',
+    MetricData: [
+      {
+        MetricName: `api.${APIName}`,
+        Timestamp: new Date(),
+        Unit: 'Count',
+        Value: 1
+      }
+    ]
+  }, function(err, data) {
+    if (err) {
+      console.log('Error sending metrics to CloudWatch:', err);
+    } else {
+      console.log('Metrics sent to CloudWatch:', data);
+    }
+  });
+  //incrementApiMetric(`DELETE api.${APIName}.count.user_deleted_successful`);
+
   res.send('removed');
 
 } catch (err )  {
@@ -241,3 +387,10 @@ router.delete('/user/:id',authenticate, async (req, res) => {
   
     app.use('/v1', router);
   };
+
+
+
+
+
+ 
+

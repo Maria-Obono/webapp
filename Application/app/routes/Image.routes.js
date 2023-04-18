@@ -13,6 +13,7 @@ module.exports = app => {
   const winston = require('winston');
   const winstonCloudWatch = require('winston-cloudwatch'); 
   const StatsD = require('hot-shots');
+
   const { Transport } = require('winston');
  
   //const {incrementApiMetric} = require('../../server.js')
@@ -36,6 +37,7 @@ module.exports = app => {
   backends: ['./backends/cloudwatch']   
   });
 
+
 //Create logger
    const logger = winston.createLogger({
     level: 'info',
@@ -55,11 +57,13 @@ module.exports = app => {
         awsAccessKeyId: process.env.AWS_ACCESS_KEY,
         awsSecretKey: process.env.AWS_SECRET_KEY,
         awsRegion: 'us-east-1'
+
       }) 
     ]
   });
 
   class StatsDTransport extends Transport {
+
     constructor(opts) {
       super(opts);
       this.client = statsdClient;
@@ -160,6 +164,7 @@ const cloudwatch = new AWS.CloudWatch({ region: 'us-east-1' });
         }
         
         logger.info('Image uploaded to S3 successfully');
+
         statsdClient.increment(`POST api.${APIName}.count.Image uploaded to S3 successfully`);
         cloudwatch.putMetricData({
           Namespace: 'Maria-App',
@@ -179,6 +184,7 @@ const cloudwatch = new AWS.CloudWatch({ region: 'us-east-1' });
           }
         });
         //incrementApiMetric(`POST api.${APIName}.count.Image uploaded to S3 successfully`);
+
         const image = await Image.create({
           
           product_id: req.params.product_id,
@@ -208,6 +214,7 @@ router.get('/product/:product_id/image/:image_id', authenticate, async (req, res
   const APIName = 'v1/product/:product_id/image/:image_id';
     
   logger.info('Received GET request to fetch image details');
+  statsdClient.increment('GET api for an image detail');
   const { product_id, image_id } = req.params;
 
   const image = await Image.findOne({
@@ -223,6 +230,7 @@ router.get('/product/:product_id/image/:image_id', authenticate, async (req, res
     res.status(404).json({ message: 'Image not found' });
   } else {
     logger.info('Returning image details:', image);
+
     statsdClient.increment(`GET api.${APIName}.count.Returning image details`);
     cloudwatch.putMetricData({
       Namespace: 'Maria-App',
@@ -242,6 +250,7 @@ router.get('/product/:product_id/image/:image_id', authenticate, async (req, res
       }
     });
     //incrementApiMetric(`GET api.${APIName}.count.Returning image details`);
+
     res.json({
       image_id: image.image_id,
       product_id: image.product_id,
@@ -269,6 +278,7 @@ router.get('/product/:product_id/image', authenticate, async (req, res) => {
       attributes: ['image_id', 'product_id', 'file_name', 'date_created', 's3_bucket_path']
     });
     logger.info(`Returning details for ${images.length} images`);
+
     statsdClient.increment(`GET api.${APIName}.count.returning details for all images`);
     cloudwatch.putMetricData({
       Namespace: 'Maria-App',
@@ -288,6 +298,7 @@ router.get('/product/:product_id/image', authenticate, async (req, res) => {
       }
     });
     //incrementApiMetric(`GET api.${APIName}.count.returning details for all images`);
+
     res.json(images.map((res) => ({
       image_id: res.image_id,
       product_id: res.product_id,
@@ -322,6 +333,7 @@ router.delete('/product/:product_id/image/:image_id', authenticate, async (req, 
     }
     await image.destroy();
     logger.info('Image successfully deleted');
+
     statsdClient.increment(`DELETE api.${APIName}.count.image_deleted`);
     cloudwatch.putMetricData({
       Namespace: 'Maria-App',
@@ -341,6 +353,7 @@ router.delete('/product/:product_id/image/:image_id', authenticate, async (req, 
       }
     });
     //incrementApiMetric(`DELETE api.${APIName}.count.image_deleted`);
+
     res.status(200).send({message:"image successfully deleted"});
   } catch (error) {
     logger.error(`Error deleting image: ${error}`);

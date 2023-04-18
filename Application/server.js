@@ -2,11 +2,14 @@ const express = require("express");
 const cors = require("cors");
 const app = express();
 const dbConfig = require("./db.config");
+
 require("dotenv/config"); 
+
 const morgan = require('morgan');
 const winston = require('winston');
 const AWS = require('aws-sdk');
 const StatsD = require('hot-shots');
+
 //const awsBackend = require("node-statsd");
 const { Transport } = require('winston');
 
@@ -28,6 +31,7 @@ const statsdClient = new StatsD({
 backends: ['./backends/cloudwatch']   
 });
 
+
 const winstonCloudWatch = require('winston-cloudwatch');
 
 const logger = winston.createLogger({
@@ -48,11 +52,13 @@ const logger = winston.createLogger({
       awsAccessKeyId: process.env.AWS_ACCESS_KEY,
       awsSecretKey: process.env.AWS_SECRET_KEY,
       awsRegion: 'us-east-1'
+
     }) 
   ]
 });
 
 class StatsDTransport extends Transport {
+
   constructor(opts) {
     super(opts);
     this.client = statsdClient;
@@ -63,7 +69,9 @@ class StatsDTransport extends Transport {
       this.emit('logged', info);
     });
 
+
      //Write the log message to StatsD
+
     this.client.increment(info.message);
     callback();
   }
@@ -91,7 +99,9 @@ AWS.config.update({
 });
 
 
+
 const cloudwatch = new AWS.CloudWatch({ region: 'us-east-1' });
+
 
 
 var corsOptions = {
@@ -143,6 +153,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // simple route
 app.get("/health", (req, res) => {
+
   const APIName= "/health"
   statsdClient.increment(`GET api.${APIName}.count.for health`);
   cloudwatch.putMetricData({
@@ -163,6 +174,7 @@ app.get("/health", (req, res) => {
     }
   });
   
+
   return res.status(200).send({ message: "Welcome to my application." });
   
   

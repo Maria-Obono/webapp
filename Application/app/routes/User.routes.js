@@ -7,6 +7,7 @@ module.exports = app => {
   const bcrypt = require('bcrypt'); 
   const winston = require('winston');
   const winstonCloudWatch = require('winston-cloudwatch');
+
   require("dotenv/config"); 
   const StatsD = require('hot-shots');
   const AWS = require('aws-sdk');
@@ -32,6 +33,7 @@ const cloudwatch = new AWS.CloudWatch({ region: 'us-east-1' });
     }
   },
   backends: ['./backends/cloudwatch']   
+
   });
 
 // Create loggers
@@ -53,9 +55,24 @@ const cloudwatch = new AWS.CloudWatch({ region: 'us-east-1' });
       awsAccessKeyId: process.env.AWS_ACCESS_KEY,
       awsSecretKey: process.env.AWS_SECRET_KEY,
       awsRegion: 'us-east-1'
+
     }) 
+
   ]
 });
+logger.info('API call made');
+
+class StatsDTransport extends winston.Transport {
+  constructor(opts) {
+    super(opts);
+    this.client = statsdClient;
+  }
+
+  log(info, callback) {
+    setImmediate(() => {
+      this.emit('logged', info);
+    });
+
 
 class StatsDTransport extends Transport {
   constructor(opts) {
@@ -67,6 +84,7 @@ class StatsDTransport extends Transport {
     setImmediate(() => {
       this.emit('logged', info);
     });
+
 
     // Write the log message to StatsD
     this.client.increment(info.message);
@@ -131,6 +149,7 @@ logger.add(new StatsDTransport());
       
     });
     
+
     logger.info('User created successfully', {userId: user.id});
     statsdClient.increment(`POST api.${APIName}.count.created`);
     cloudwatch.putMetricData({
@@ -151,6 +170,7 @@ logger.add(new StatsDTransport());
       }
     });
     //incrementApiMetric(`POST api.${APIName}.user.created`);
+
 
 
     // Return the created user, excluding the password field
@@ -222,6 +242,7 @@ logger.add(new StatsDTransport());
     // Save the updated user to the database
     await user.save();
     logger.info('User information updated successfully', {userId: id});
+
     statsdClient.increment(`PUT api.${APIName}.count.user_updated`);
     cloudwatch.putMetricData({
       Namespace: 'Maria-App',
@@ -241,6 +262,7 @@ logger.add(new StatsDTransport());
       }
     });
     //incrementApiMetric(`PUT api.${APIName}.count.user_updated`);
+
   
     // Return response
     return res.status(200).send({message: "user information updated successfully"});
@@ -290,6 +312,7 @@ try{
   }
 
   logger.info('User information retrieved successfully', {userId: id});
+
   statsdClient.increment(`GET api.${APIName}.count.information_retrieved`);
   cloudwatch.putMetricData({
     Namespace: 'Maria-App',
@@ -309,6 +332,7 @@ try{
     }
   });
   //incrementApiMetric(`GET api.${APIName}.count.information_retrieved`);
+
 
   // Return the user's information
   return res.json(user);
@@ -330,6 +354,7 @@ router.delete('/user/:id',authenticate, async (req, res) => {
   try{
   await User.destroy({where: {id: id}});
   logger.info('User deleted successfully', {userId: id});
+
   statsdClient.increment(`DELETE api.${APIName}.count.user_deleted_successful`);
   cloudwatch.putMetricData({
     Namespace: 'Maria-App',
@@ -349,6 +374,7 @@ router.delete('/user/:id',authenticate, async (req, res) => {
     }
   });
   //incrementApiMetric(`DELETE api.${APIName}.count.user_deleted_successful`);
+
   res.send('removed');
 
 } catch (err )  {

@@ -13,9 +13,11 @@ module.exports = app => {
     const winston = require('winston');
     const winstonCloudWatch = require('winston-cloudwatch');
     const StatsD = require('hot-shots');
+
     const { Transport } = require('winston');
     const AWS = require('aws-sdk');
     //const {incrementApiMetric} = require('../../server.js')
+
 
  const cloudwatch = new AWS.CloudWatch({ region: 'us-east-1' });
     const statsdClient = new StatsD({
@@ -49,6 +51,7 @@ module.exports = app => {
       timestamp: true,
       colorize: true
     }),
+
    // new winston.transports.File({ filename: 'logs/sequelize.log' }),
    new winstonCloudWatch({
     logGroupName: "csye6225-demo",
@@ -61,6 +64,7 @@ module.exports = app => {
 });
 
 class StatsDTransport extends Transport {
+
   constructor(opts) {
     super(opts);
     this.client = statsdClient;
@@ -71,7 +75,9 @@ class StatsDTransport extends Transport {
       this.emit('logged', info);
     });
 
+
      //Write the log message to StatsD
+
     this.client.increment(info.message);
     callback();
   }
@@ -115,6 +121,7 @@ router.post('/product', authenticate, async (req, res) => {
     
       // Check if the user exists
       const user = await User.findOne({ where: { id: req.user.id } });
+      statsdClient.increment('A Product has been POST');
       if (!user) {
         logger.error(`User with id ${req.user.id} not found`);
         return res.status(404).json({ error: 'User not found' });
@@ -219,6 +226,7 @@ router.post('/product', authenticate, async (req, res) => {
           res.status(204).send();
         } else {
           logger.info(`Product with id ${productId} has been updated`);
+
           statsdClient.increment(`PUT api.${APIName}.count.product.update.successful`);
           cloudwatch.putMetricData({
             Namespace: 'Maria-App',
@@ -238,6 +246,7 @@ router.post('/product', authenticate, async (req, res) => {
             }
           });
           //incrementApiMetric(`PUT api.${APIName}.count.product.update.successful`);
+
           res.json({
             id: product.id,
             name: product.name,
@@ -300,6 +309,7 @@ router.post('/product', authenticate, async (req, res) => {
       })
       .then((product) => {
         logger.info('Product with ID ' + productId + ' updated successfully', { user_id: req.user.id });
+
         statsdClient.increment(`PATCH api.${APIName}.count.product.update.successful`, { user_id: req.user.id });
         cloudwatch.putMetricData({
           Namespace: 'Maria-App',
@@ -319,6 +329,7 @@ router.post('/product', authenticate, async (req, res) => {
           }
         });
         //incrementApiMetric(`PATCH api.${APIName}.count.product.update.successful`, { user_id: req.user.id });
+
         res.json({
           id: product.id,
           name: product.name,
@@ -363,6 +374,7 @@ router.post('/product', authenticate, async (req, res) => {
           res.status(404).json({ error: 'Product not found' });
         } else {
           logger.info('Product with ID ' + productId + ' removed successfully', { user_id: req.user.id });
+
           statsdClient.increment(`DELETE api.${APIName}.count.product_deleted`);
           cloudwatch.putMetricData({
             Namespace: 'Maria-App',
@@ -382,6 +394,7 @@ router.post('/product', authenticate, async (req, res) => {
             }
           });
           //incrementApiMetric(`DELETE api.${APIName}.count.product_deleted`);
+
           res.sendStatus(204).json({message: 'product removed successfully'});
         }
       })
@@ -414,6 +427,7 @@ router.post('/product', authenticate, async (req, res) => {
           res.status(404).json({ error: 'Product not found' });
         } else {
           logger.info('Product found', { productId });
+
           statsdClient.increment(`GET api.${APIName}.count.Product_found`);
           cloudwatch.putMetricData({
             Namespace: 'Maria-App',
@@ -433,6 +447,7 @@ router.post('/product', authenticate, async (req, res) => {
             }
           });
           //incrementApiMetric(`GET api.${APIName}.count.Product_found`);
+
           res.json({
             id: product.id,
             name: product.name,

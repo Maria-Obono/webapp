@@ -62,6 +62,18 @@ const cloudwatch = new AWS.CloudWatch({ region: 'us-east-1' });
 });
 logger.info('API call made');
 
+class StatsDTransport extends winston.Transport {
+  constructor(opts) {
+    super(opts);
+    this.client = statsdClient;
+  }
+
+  log(info, callback) {
+    setImmediate(() => {
+      this.emit('logged', info);
+    });
+
+
 class StatsDTransport extends Transport {
   constructor(opts) {
     super(opts);
@@ -372,5 +384,13 @@ router.delete('/user/:id',authenticate, async (req, res) => {
 
 });
 
+  
     app.use('/v1', router);
   };
+
+
+
+
+
+ 
+

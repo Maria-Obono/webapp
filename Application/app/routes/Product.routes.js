@@ -16,7 +16,7 @@ module.exports = app => {
 
     const { Transport } = require('winston');
     const AWS = require('aws-sdk');
-    //const {incrementApiMetric} = require('../../server.js')
+   
 
 
  const cloudwatch = new AWS.CloudWatch({ region: 'us-east-1' });

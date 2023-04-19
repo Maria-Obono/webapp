@@ -17,7 +17,7 @@ module.exports = app => {
   const { Transport } = require('winston');
   
   
-//const cloudwatch = new AWS.CloudWatch({ region: 'us-east-1'});
+const cloudwatch = new AWS.CloudWatch({ region: 'us-east-1'});
 
 
   const statsdClient = new StatsD({

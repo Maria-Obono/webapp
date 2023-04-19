@@ -12,7 +12,7 @@ module.exports = app => {
   const AWS = require('aws-sdk');
   //const awsBackend = require("node-statsd");
   const { Transport } = require('winston');
-  //const {incrementApiMetric} = require('../../server.js')
+  
   
 const cloudwatch = new AWS.CloudWatch({ region: 'us-east-1' });
 

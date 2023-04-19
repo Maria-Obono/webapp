@@ -251,7 +251,7 @@ logger.add(new StatsDTransport());
       Namespace: 'Maria-App',
       MetricData: [
         {
-          MetricName: `api.${APIName}.count.user_already_exists`,
+          MetricName: `api.${APIName}`,
           Timestamp: new Date(),
           Unit: 'Count',
           Value: 1
@@ -295,7 +295,7 @@ try{
     Namespace: 'Maria-App',
     MetricData: [
       {
-        MetricName: `api.${APIName}`,
+        MetricName: `api.${APIName}.count.user_already_exists`,
         Timestamp: new Date(),
         Unit: 'Count',
         Value: 1
@@ -360,4 +360,6 @@ router.delete('/user/:id',authenticate, async (req, res) => {
 
   
     app.use('/v1', router);
+
   };
+

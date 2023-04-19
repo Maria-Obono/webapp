@@ -15,9 +15,11 @@ module.exports = app => {
   const StatsD = require('hot-shots');
 
   const { Transport } = require('winston');
+
   
   
 //const cloudwatch = new AWS.CloudWatch({ region: 'us-east-1'});
+
 
 
   const statsdClient = new StatsD({
@@ -135,10 +137,12 @@ module.exports = app => {
   
   const upload = multer({ storage: storage, fileFilter: filefilter }).single('productimage');
 
+
   
   const s3 = new AWS.S3({
     accessKeyId: process.env.AWS_ACCESS_KEY, secretAccessKey: process.env.AWS_SECRET_KEY, region: 'us-east-1'
 });
+
 
 
 
@@ -170,6 +174,9 @@ module.exports = app => {
         }
         
         logger.info('Image uploaded to S3 successfully');
+
+
+
 
 
         const image = await Image.create({
@@ -260,6 +267,7 @@ router.get('/product/:product_id/image/:image_id', authenticate, async (req, res
     });
     
 
+
     res.json({
       image_id: image.image_id,
       product_id: image.product_id,
@@ -308,6 +316,7 @@ router.get('/product/:product_id/image', authenticate, async (req, res) => {
       }
     });
     
+
 
     res.json(images.map((res) => ({
       image_id: res.image_id,
@@ -364,6 +373,7 @@ router.delete('/product/:product_id/image/:image_id', authenticate, async (req, 
       }
     });
     
+
 
 
     res.status(200).send({message:"image successfully deleted"});

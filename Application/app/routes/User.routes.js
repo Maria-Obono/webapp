@@ -295,7 +295,7 @@ try{
     Namespace: 'Maria-App',
     MetricData: [
       {
-        MetricName: `api.${APIName}.count.user_already_exists`,
+        MetricName: `api.${APIName}`,
         Timestamp: new Date(),
         Unit: 'Count',
         Value: 1

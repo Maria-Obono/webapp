@@ -15,10 +15,9 @@ module.exports = app => {
   const StatsD = require('hot-shots');
 
   const { Transport } = require('winston');
-  //const {incrementApiMetric} = require('../../server.js')
   
-const cloudwatch = new AWS.CloudWatch({ region: 'us-east-1', accessKeyId: process.env.AWS_ACCESS_KEY,
-secretAccessKey: process.env.AWS_SECRET_KEY });
+  
+//const cloudwatch = new AWS.CloudWatch({ region: 'us-east-1'});
 
 
   const statsdClient = new StatsD({
@@ -138,7 +137,7 @@ secretAccessKey: process.env.AWS_SECRET_KEY });
 
   
   const s3 = new AWS.S3({
-    accessKeyId: process.env.AWS_ACCESS_KEY, region: 'us-east-1'
+    accessKeyId: process.env.AWS_ACCESS_KEY, secretAccessKey: process.env.AWS_SECRET_KEY, region: 'us-east-1'
 });
 
 
@@ -159,7 +158,8 @@ secretAccessKey: process.env.AWS_SECRET_KEY });
         Bucket: process.env.BUCKET_NAME,
         Key: req.file.originalname + '-' + Date.now(),
         Body: req.file.buffer,
-        ACL: "public-read-write",
+        //ACL: "public-read-write",
+        ACL: "private",
         ContentType: "image/jpeg"
       };
     
@@ -170,27 +170,6 @@ secretAccessKey: process.env.AWS_SECRET_KEY });
         }
         
         logger.info('Image uploaded to S3 successfully');
-
-
-        statsdClient.increment(`POST api.${APIName}.count.Image uploaded to S3 successfully`);
-        cloudwatch.putMetricData({
-          Namespace: 'Maria-App',
-          MetricData: [
-            {
-              MetricName: `api.${APIName}.count.user_already_exists`,
-              Timestamp: new Date(),
-              Unit: 'Count',
-              Value: 1
-            }
-          ]
-        }, function(err, data) {
-          if (err) {
-            console.log('Error sending metrics to CloudWatch:', err);
-          } else {
-            console.log('Metrics sent to CloudWatch:', data);
-          }
-        });
-        //incrementApiMetric(`POST api.${APIName}.count.Image uploaded to S3 successfully`);
 
 
         const image = await Image.create({
@@ -211,7 +190,28 @@ secretAccessKey: process.env.AWS_SECRET_KEY });
               s3_bucket_path: data.Location,
             });
       });
-    });   
+      
+    }); 
+    
+    statsdClient.increment(`POST api.${APIName}.count.Image uploaded to S3 successfully`);
+        cloudwatch.putMetricData({
+          Namespace: 'Maria-App',
+          MetricData: [
+            {
+              MetricName: `api.${APIName}`,
+              Timestamp: new Date(),
+              Unit: 'Count',
+              Value: 1
+            }
+          ]
+        }, function(err, data) {
+          if (err) {
+            console.log('Error sending metrics to CloudWatch:', err);
+          } else {
+            console.log('Metrics sent to CloudWatch:', data);
+          }
+        });
+        
   });
  
   
@@ -258,8 +258,7 @@ router.get('/product/:product_id/image/:image_id', authenticate, async (req, res
         console.log('Metrics sent to CloudWatch:', data);
       }
     });
-    //incrementApiMetric(`GET api.${APIName}.count.Returning image details`);
-
+    
 
     res.json({
       image_id: image.image_id,
@@ -308,8 +307,7 @@ router.get('/product/:product_id/image', authenticate, async (req, res) => {
         console.log('Metrics sent to CloudWatch:', data);
       }
     });
-    //incrementApiMetric(`GET api.${APIName}.count.returning details for all images`);
-
+    
 
     res.json(images.map((res) => ({
       image_id: res.image_id,
@@ -365,7 +363,7 @@ router.delete('/product/:product_id/image/:image_id', authenticate, async (req, 
         console.log('Metrics sent to CloudWatch:', data);
       }
     });
-    //incrementApiMetric(`DELETE api.${APIName}.count.image_deleted`);
+    
 
 
     res.status(200).send({message:"image successfully deleted"});

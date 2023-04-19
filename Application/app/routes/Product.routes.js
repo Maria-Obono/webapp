@@ -28,7 +28,7 @@ module.exports = app => {
         region: 'us-east-1',
           accessKeyId: process.env.AWS_ACCESS_KEY,
           secretAccessKey: process.env.AWS_SECRET_KEY,
-          namespace: 'Maria-App',
+          namespace: 'Maria-api',
           aws_iam_role: "EC2-CSYE6225",
           globalDimensions: {
           Environment: 'production',
@@ -142,7 +142,7 @@ router.post('/product', authenticate, async (req, res) => {
         logger.info(`New product with id ${product.id} has been created`);
         statsdClient.increment(`POST api.${APIName}.count.product_create_successful`);
         cloudwatch.putMetricData({
-          Namespace: 'Maria-App',
+          Namespace: 'Maria-api',
           MetricData: [
             {
               MetricName: `api.${APIName}`,
@@ -229,7 +229,7 @@ router.post('/product', authenticate, async (req, res) => {
 
           statsdClient.increment(`PUT api.${APIName}.count.product.update.successful`);
           cloudwatch.putMetricData({
-            Namespace: 'Maria-App',
+            Namespace: 'Maria-api',
             MetricData: [
               {
                 MetricName: `api.${APIName}`,
@@ -312,7 +312,7 @@ router.post('/product', authenticate, async (req, res) => {
 
         statsdClient.increment(`PATCH api.${APIName}.count.product.update.successful`, { user_id: req.user.id });
         cloudwatch.putMetricData({
-          Namespace: 'Maria-App',
+          Namespace: 'Maria-api',
           MetricData: [
             {
               MetricName: `api.${APIName}`,
@@ -377,7 +377,7 @@ router.post('/product', authenticate, async (req, res) => {
 
           statsdClient.increment(`DELETE api.${APIName}.count.product_deleted`);
           cloudwatch.putMetricData({
-            Namespace: 'Maria-App',
+            Namespace: 'Maria-api',
             MetricData: [
               {
                 MetricName: `api.${APIName}`,
@@ -430,7 +430,7 @@ router.post('/product', authenticate, async (req, res) => {
 
           statsdClient.increment(`GET api.${APIName}.count.Product_found`);
           cloudwatch.putMetricData({
-            Namespace: 'Maria-App',
+            Namespace: 'Maria-api',
             MetricData: [
               {
                 MetricName: `api.${APIName}`,

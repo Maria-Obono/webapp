@@ -28,7 +28,7 @@ module.exports = app => {
       region: 'us-east-1',
         accessKeyId: process.env.AWS_ACCESS_KEY,
         secretAccessKey: process.env.AWS_SECRET_KEY,
-        namespace: 'Maria-App',
+        namespace: 'Maria-api',
         aws_iam_role: "EC2-CSYE6225",
         globalDimensions: {
         Environment: 'production',
@@ -195,7 +195,7 @@ module.exports = app => {
     
     statsdClient.increment(`POST api.${APIName}.count.Image uploaded to S3 successfully`);
         cloudwatch.putMetricData({
-          Namespace: 'Maria-App',
+          Namespace: 'Maria-api',
           MetricData: [
             {
               MetricName: `api.${APIName}`,
@@ -242,10 +242,10 @@ router.get('/product/:product_id/image/:image_id', authenticate, async (req, res
 
     statsdClient.increment(`GET api.${APIName}.count.Returning image details`);
     cloudwatch.putMetricData({
-      Namespace: 'Maria-App',
+      Namespace: 'Maria-api',
       MetricData: [
         {
-          MetricName: `api.${APIName}.count.user_already_exists`,
+          MetricName: `api.${APIName}`,
           Timestamp: new Date(),
           Unit: 'Count',
           Value: 1
@@ -291,10 +291,10 @@ router.get('/product/:product_id/image', authenticate, async (req, res) => {
 
     statsdClient.increment(`GET api.${APIName}.count.returning details for all images`);
     cloudwatch.putMetricData({
-      Namespace: 'Maria-App',
+      Namespace: 'Maria-api',
       MetricData: [
         {
-          MetricName: `api.${APIName}.count.user_already_exists`,
+          MetricName: `api.${APIName}`,
           Timestamp: new Date(),
           Unit: 'Count',
           Value: 1
@@ -347,10 +347,10 @@ router.delete('/product/:product_id/image/:image_id', authenticate, async (req, 
 
     statsdClient.increment(`DELETE api.${APIName}.count.image_deleted`);
     cloudwatch.putMetricData({
-      Namespace: 'Maria-App',
+      Namespace: 'Maria-api',
       MetricData: [
         {
-          MetricName: `api.${APIName}.count.user_already_exists`,
+          MetricName: `api.${APIName}`,
           Timestamp: new Date(),
           Unit: 'Count',
           Value: 1

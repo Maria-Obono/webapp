@@ -24,7 +24,7 @@ const cloudwatch = new AWS.CloudWatch({ region: 'us-east-1' });
       region: 'us-east-1',
         accessKeyId: process.env.AWS_ACCESS_KEY,
         secretAccessKey: process.env.AWS_SECRET_KEY,
-        namespace: 'Maria-App',
+        namespace: 'Maria-api',
         aws_iam_role: "EC2-CSYE6225",
         globalDimensions: {
         Environment: 'production',
@@ -134,7 +134,7 @@ logger.add(new StatsDTransport());
     logger.info('User created successfully', {userId: user.id});
     statsdClient.increment(`POST api.${APIName}.count.created`);
     cloudwatch.putMetricData({
-      Namespace: 'Maria-App',
+      Namespace: 'Maria-api',
       MetricData: [
         {
           MetricName: `api.${APIName}`,
@@ -183,25 +183,7 @@ logger.add(new StatsDTransport());
     const user = await User.findByPk(id);
     if (!user) {
       logger.info('User not found', {userId: id});
-      statsdClient.increment(`PUT api.${APIName}.count.user_not_found`);
-      cloudwatch.putMetricData({
-        Namespace: 'Maria-App',
-        MetricData: [
-          {
-            MetricName: `api.${APIName}`,
-            Timestamp: new Date(),
-            Unit: 'Count',
-            Value: 1
-          }
-        ]
-      }, function(err, data) {
-        if (err) {
-          console.log('Error sending metrics to CloudWatch:', err);
-        } else {
-          console.log('Metrics sent to CloudWatch:', data);
-        }
-      });
-      //incrementApiMetric(`PUT api.${APIName}.count.user_not_found`);
+      
       return res.status(400).json({ message: 'Bad Request' });
     }
   
@@ -224,7 +206,7 @@ logger.add(new StatsDTransport());
     logger.info('User information updated successfully', {userId: id});
     statsdClient.increment(`PUT api.${APIName}.count.user_updated`);
     cloudwatch.putMetricData({
-      Namespace: 'Maria-App',
+      Namespace: 'Maria-api',
       MetricData: [
         {
           MetricName: `api.${APIName}`,
@@ -247,24 +229,6 @@ logger.add(new StatsDTransport());
 
   } catch (err )  {
     logger.error('Error updating user', {error: err});
-    cloudwatch.putMetricData({
-      Namespace: 'Maria-App',
-      MetricData: [
-        {
-          MetricName: `api.${APIName}.count.user_already_exists`,
-          Timestamp: new Date(),
-          Unit: 'Count',
-          Value: 1
-        }
-      ]
-    }, function(err, data) {
-      if (err) {
-        console.log('Error sending metrics to CloudWatch:', err);
-      } else {
-        console.log('Metrics sent to CloudWatch:', data);
-      }
-    });
-    //statsdClient.increment(`PUT api.${APIName}.count.update_error`);
     res.status(500).send('Internal Server Error');
   }
   });
@@ -292,7 +256,7 @@ try{
   logger.info('User information retrieved successfully', {userId: id});
   statsdClient.increment(`GET api.${APIName}.count.information_retrieved`);
   cloudwatch.putMetricData({
-    Namespace: 'Maria-App',
+    Namespace: 'Maria-api',
     MetricData: [
       {
         MetricName: `api.${APIName}`,
@@ -332,7 +296,7 @@ router.delete('/user/:id',authenticate, async (req, res) => {
   logger.info('User deleted successfully', {userId: id});
   statsdClient.increment(`DELETE api.${APIName}.count.user_deleted_successful`);
   cloudwatch.putMetricData({
-    Namespace: 'Maria-App',
+    Namespace: 'Maria-api',
     MetricData: [
       {
         MetricName: `api.${APIName}`,

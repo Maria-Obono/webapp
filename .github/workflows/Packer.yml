@@ -49,6 +49,7 @@ jobs:
           PACKER_LOG: 1
 
 
+
       
       - name: Get AMI ID
         id: ami_id
@@ -80,5 +81,6 @@ jobs:
            aws autoscaling start-instance-refresh --auto-scaling-group-name "${{secrets.AUTO_SCALING_GROUP_NAME}}" --strategy Rolling --preferences "{
            \"MinHealthyPercentage\": 50,
            \"InstanceWarmup\": 300
+
            }" --launch-template "{\"LaunchTemplateName\":\"${{secrets.LAUNCH_TEMPLATE_NAME}}\",\"Version\":\"${{ steps.lt_version.outputs.lt_version }}\"}" --region us-east-1
 

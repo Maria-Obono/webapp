@@ -61,9 +61,9 @@ jobs:
         run: |
           ami_id=$(aws ec2 describe-images --owners self --query 'sort_by(Images, &CreationDate)[-1].ImageId' --output text)
           echo "AMI ID: $ami_id"
-          lt_id=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names loadbalancer-asg --query 'AutoScalingGroups[0].LaunchTemplate.LaunchTemplateId' --output text)
+          lt_id=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names web-elb --query 'AutoScalingGroups[0].LaunchTemplate.LaunchTemplateId' --output text)
           aws ec2 create-launch-template-version --launch-template-id $lt_id --version-description version2 --source-version 1 --launch-template-data "ImageId=$ami_id"
-          group_name=loadbalancer-asg
+          group_name=web-elb
           lt_ver=$(aws ec2 describe-launch-template-versions --launch-template-id $lt_id --query 'sort_by(LaunchTemplateVersions, &VersionNumber)[-1].VersionNumber' --output text)
           aws autoscaling update-auto-scaling-group --auto-scaling-group-name $group_name --launch-template LaunchTemplateId=$lt_id,Version=$lt_ver --output text
           aws autoscaling start-instance-refresh --auto-scaling-group-name $group_name --strategy Rolling --preferences "MinHealthyPercentage=75,InstanceWarmup=300" --output text

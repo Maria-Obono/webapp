@@ -22,6 +22,8 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+    
+
       # Initialize Packer templates
       - name: Initialize Packer Template
         uses: hashicorp/packer-github-actions@master
@@ -45,6 +47,8 @@ jobs:
           target: aws-packer.pkr.hcl
         env:
           PACKER_LOG: 1
+
+
 
       
       - name: Get AMI ID
@@ -77,4 +81,6 @@ jobs:
            aws autoscaling start-instance-refresh --auto-scaling-group-name "${{secrets.AUTO_SCALING_GROUP_NAME}}" --strategy Rolling --preferences "{
            \"MinHealthyPercentage\": 50,
            \"InstanceWarmup\": 300
+
            }" --launch-template "{\"LaunchTemplateName\":\"${{secrets.LAUNCH_TEMPLATE_NAME}}\",\"Version\":\"${{ steps.lt_version.outputs.lt_version }}\"}" --region us-east-1
+

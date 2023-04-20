@@ -51,10 +51,10 @@ jobs:
 
       - name: Create new launch template version
         run: |
-          aws ec2 create-launch-template-version --launch-template-name asg_launch_config --source-version "$Latest" --launch-template-data "{ \"ImageId\": \"${{ secrets.AMI_ID }}\" }"
+          aws ec2 create-launch-template-version --launch-template-name asg_launch_config --source-version ${{ github.sha }} --region us-east-1
 
       - name: Initiate instance refresh
         run: |
-          aws autoscaling start-instance-refresh --auto-scaling-group-name asg_launch_config --preferences "MinHealthyPercentage=75,InstanceWarmup=300"      
+          aws autoscaling start-instance-refresh --auto-scaling-group-name asg_launch_config --preferences "MinHealthyPercentage=75,InstanceWarmup=300" --region us-east-1     
         
 

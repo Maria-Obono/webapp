@@ -229,6 +229,8 @@ logger.add(new StatsDTransport());
 
   } catch (err )  {
     logger.error('Error updating user', {error: err});
+
+
     res.status(500).send('Internal Server Error');
   }
   });
@@ -259,7 +261,7 @@ try{
     Namespace: 'Maria-api',
     MetricData: [
       {
-        MetricName: `api.${APIName}`,
+        MetricName: `api.${APIName}.count.user_already_exists`,
         Timestamp: new Date(),
         Unit: 'Count',
         Value: 1
@@ -324,4 +326,6 @@ router.delete('/user/:id',authenticate, async (req, res) => {
 
   
     app.use('/v1', router);
+
   };
+

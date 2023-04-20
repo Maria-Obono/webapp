@@ -22,6 +22,14 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      - name: Create new launch template version
+        run: |
+          aws ec2 create-launch-template-version --launch-template-name "${{ secrets.LAUNCH_TEMPLATE_NAME }}" --source-version "$Latest" --launch-template-data "{ \"ImageId\": \"${{ secrets.AMI_ID }}\" }"
+
+      - name: Initiate instance refresh
+        run: |
+          aws autoscaling start-instance-refresh --auto-scaling-group-name "${{ secrets.AUTO_SCALING_GROUP_NAME }}" --preferences "MinHealthyPercentage=75,InstanceWarmup=300"    
+
       # Initialize Packer templates
       - name: Initialize Packer Template
         uses: hashicorp/packer-github-actions@master
@@ -46,6 +54,7 @@ jobs:
         env:
           PACKER_LOG: 1
 
+
       - name: Create new launch template version
         run: |
           aws ec2 create-launch-template-version --launch-template-name "${{ secrets.LAUNCH_TEMPLATE_NAME }}" --source-version "${{ secrets.LAUNCH_TEMPLATE_NAME }}" --launch-template-data "{ \"ImageId\": \"${{ secrets.AMI_ID }}\" }"
@@ -54,3 +63,4 @@ jobs:
         run: |
           aws autoscaling start-instance-refresh --auto-scaling-group-name "${{ secrets.AUTO_SCALING_GROUP_NAME }}" --preferences "MinHealthyPercentage=75,InstanceWarmup=300"      
         
+

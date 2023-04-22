@@ -325,7 +325,7 @@ router.delete('/user/:id',authenticate, async (req, res) => {
 });
 
   
-    app.use('/v2', router);
+    app.use('/v1', router);
 
   };
 
